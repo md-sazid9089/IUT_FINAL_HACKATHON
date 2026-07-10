@@ -1,40 +1,953 @@
 {
   "version": 1,
-  "author": "IUT Final Hackathon",
+  "author": "IUT Hackathon Team",
   "editor": "wokwi",
   "parts": [
-    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-    { "type": "wokwi-servo", "id": "servo1", "top": -120, "left": 260, "attrs": {} },
-    { "type": "wokwi-servo", "id": "servo2", "top": -70, "left": 260, "attrs": {} },
-    { "type": "wokwi-servo", "id": "servo3", "top": -20, "left": 260, "attrs": {} },
-    { "type": "wokwi-servo", "id": "servo4", "top": 30, "left": 260, "attrs": {} },
-    { "type": "wokwi-servo", "id": "servo5", "top": 80, "left": 260, "attrs": {} },
-    { "type": "wokwi-servo", "id": "servo6", "top": 130, "left": 260, "attrs": {} },
-    { "type": "wokwi-pushbutton", "id": "estop", "top": 190, "left": 40, "attrs": { "color": "red", "label": "E-stop" } },
-    { "type": "wokwi-led", "id": "led", "top": 190, "left": 160, "attrs": { "color": "green", "label": "Status" } }
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp32",
+      "top": 70,
+      "left": 10,
+      "attrs": {}
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled",
+      "top": -95,
+      "left": 110,
+      "attrs": {
+        "i2cAddress": "0x3c"
+      }
+    },
+    {
+      "type": "wokwi-74hc595",
+      "id": "sr",
+      "top": 535,
+      "left": 555,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "srLabel",
+      "top": 510,
+      "left": 525,
+      "attrs": {
+        "text": "KEY / STATUS LED DRIVER"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": -110,
+      "left": 430,
+      "attrs": {
+        "horn": "double",
+        "hornColor": "#ffb300"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "servoLabel1",
+      "top": -25,
+      "left": 425,
+      "attrs": {
+        "text": "J1 Base"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo2",
+      "top": 10,
+      "left": 430,
+      "attrs": {
+        "horn": "double",
+        "hornColor": "#f4511e"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "servoLabel2",
+      "top": 95,
+      "left": 425,
+      "attrs": {
+        "text": "J2 Shoulder"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo3",
+      "top": 130,
+      "left": 430,
+      "attrs": {
+        "horn": "double",
+        "hornColor": "#8e24aa"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "servoLabel3",
+      "top": 215,
+      "left": 425,
+      "attrs": {
+        "text": "J3 Elbow"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo4",
+      "top": -110,
+      "left": 665,
+      "attrs": {
+        "horn": "double",
+        "hornColor": "#3949ab"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "servoLabel4",
+      "top": -25,
+      "left": 660,
+      "attrs": {
+        "text": "J4 Wrist Roll"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo5",
+      "top": 10,
+      "left": 665,
+      "attrs": {
+        "horn": "double",
+        "hornColor": "#00897b"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "servoLabel5",
+      "top": 95,
+      "left": 660,
+      "attrs": {
+        "text": "J5 Wrist Pitch"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo6",
+      "top": 130,
+      "left": 665,
+      "attrs": {
+        "horn": "double",
+        "hornColor": "#7cb342"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "servoLabel6",
+      "top": 215,
+      "left": 660,
+      "attrs": {
+        "text": "J6 Tool Roll"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "estopBtn",
+      "top": 430,
+      "left": 155,
+      "attrs": {
+        "color": "red",
+        "label": "EMERGENCY STOP",
+        "key": "E",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "joyLabel",
+      "top": 310,
+      "left": 265,
+      "attrs": {
+        "text": "4-WAY JOYSTICK / D-PAD"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "joyUp",
+      "top": 335,
+      "left": 315,
+      "attrs": {
+        "color": "blue",
+        "label": "UP",
+        "key": "W",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "joyLeft",
+      "top": 400,
+      "left": 250,
+      "attrs": {
+        "color": "blue",
+        "label": "LEFT",
+        "key": "A",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "joyRight",
+      "top": 400,
+      "left": 380,
+      "attrs": {
+        "color": "blue",
+        "label": "RIGHT",
+        "key": "D",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "joyDown",
+      "top": 465,
+      "left": 315,
+      "attrs": {
+        "color": "blue",
+        "label": "DOWN",
+        "key": "S",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR1",
+      "top": 645,
+      "left": 515,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "keyLed1",
+      "top": 660,
+      "left": 515,
+      "attrs": {
+        "color": "yellow",
+        "label": "KEY 1"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR2",
+      "top": 645,
+      "left": 590,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "keyLed2",
+      "top": 660,
+      "left": 590,
+      "attrs": {
+        "color": "yellow",
+        "label": "KEY 2"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR3",
+      "top": 645,
+      "left": 665,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "keyLed3",
+      "top": 660,
+      "left": 665,
+      "attrs": {
+        "color": "yellow",
+        "label": "KEY 3"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR4",
+      "top": 720,
+      "left": 515,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "keyLed4",
+      "top": 735,
+      "left": 515,
+      "attrs": {
+        "color": "yellow",
+        "label": "KEY 4"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR5",
+      "top": 720,
+      "left": 590,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "keyLed5",
+      "top": 735,
+      "left": 590,
+      "attrs": {
+        "color": "yellow",
+        "label": "KEY 5"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR6",
+      "top": 720,
+      "left": 665,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "keyLed6",
+      "top": 735,
+      "left": 665,
+      "attrs": {
+        "color": "yellow",
+        "label": "KEY 6"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR7",
+      "top": 645,
+      "left": 760,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "readyLed",
+      "top": 660,
+      "left": 760,
+      "attrs": {
+        "color": "green",
+        "label": "READY"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "ledR8",
+      "top": 720,
+      "left": 760,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "stopLed",
+      "top": 735,
+      "left": 760,
+      "attrs": {
+        "color": "red",
+        "label": "STOPPED"
+      }
+    },
+    {
+      "type": "wokwi-membrane-keypad",
+      "id": "pinKeypad",
+      "top": -290,
+      "left": -234.4,
+      "attrs": {
+        "columns": "4",
+        "keys": [
+          "1",
+          "2",
+          "3",
+          "MODE",
+          "4",
+          "5",
+          "6",
+          "HOME",
+          "\u2014",
+          "\u2014",
+          "\u2014",
+          "CLEAR",
+          "SPEED",
+          "\u2014",
+          "ENTER",
+          "RESUME"
+        ]
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "nativeKeypadTitle",
+      "top": -325,
+      "left": -220,
+      "attrs": {
+        "text": "MANUAL SIX-DIGIT PIN KEYPAD"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "keypadPullup1",
+      "top": 555,
+      "left": 300,
+      "rotate": 90,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "keypadPullup2",
+      "top": 590,
+      "left": 300,
+      "rotate": 90,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "keypadPullup3",
+      "top": 625,
+      "left": 300,
+      "rotate": 90,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "keypadPullup4",
+      "top": 660,
+      "left": 300,
+      "rotate": 90,
+      "attrs": {
+        "value": "10000"
+      }
+    }
   ],
   "connections": [
-    ["esp:18", "servo1:PWM", "green", []],
-    ["esp:19", "servo2:PWM", "green", []],
-    ["esp:21", "servo3:PWM", "green", []],
-    ["esp:22", "servo4:PWM", "green", []],
-    ["esp:23", "servo5:PWM", "green", []],
-    ["esp:5", "servo6:PWM", "green", []],
-    ["esp:GND.1", "servo1:GND", "black", []],
-    ["esp:GND.1", "servo2:GND", "black", []],
-    ["esp:GND.1", "servo3:GND", "black", []],
-    ["esp:GND.1", "servo4:GND", "black", []],
-    ["esp:GND.1", "servo5:GND", "black", []],
-    ["esp:GND.1", "servo6:GND", "black", []],
-    ["esp:VIN", "servo1:V+", "red", []],
-    ["esp:VIN", "servo2:V+", "red", []],
-    ["esp:VIN", "servo3:V+", "red", []],
-    ["esp:VIN", "servo4:V+", "red", []],
-    ["esp:VIN", "servo5:V+", "red", []],
-    ["esp:VIN", "servo6:V+", "red", []],
-    ["esp:27", "estop:1.r", "red", []],
-    ["esp:GND.2", "estop:2.r", "black", []],
-    ["esp:2", "led:A", "green", []],
-    ["esp:GND.2", "led:C", "black", []]
-  ]
+    [
+      "esp32:13",
+      "servo1:PWM",
+      "green",
+      []
+    ],
+    [
+      "esp32:5V",
+      "servo1:V+",
+      "red",
+      []
+    ],
+    [
+      "esp32:GND.1",
+      "servo1:GND",
+      "black",
+      []
+    ],
+    [
+      "esp32:14",
+      "servo2:PWM",
+      "green",
+      []
+    ],
+    [
+      "esp32:5V",
+      "servo2:V+",
+      "red",
+      []
+    ],
+    [
+      "esp32:GND.1",
+      "servo2:GND",
+      "black",
+      []
+    ],
+    [
+      "esp32:16",
+      "servo3:PWM",
+      "green",
+      []
+    ],
+    [
+      "esp32:5V",
+      "servo3:V+",
+      "red",
+      []
+    ],
+    [
+      "esp32:GND.1",
+      "servo3:GND",
+      "black",
+      []
+    ],
+    [
+      "esp32:17",
+      "servo4:PWM",
+      "green",
+      []
+    ],
+    [
+      "esp32:5V",
+      "servo4:V+",
+      "red",
+      []
+    ],
+    [
+      "esp32:GND.1",
+      "servo4:GND",
+      "black",
+      []
+    ],
+    [
+      "esp32:25",
+      "servo5:PWM",
+      "green",
+      []
+    ],
+    [
+      "esp32:5V",
+      "servo5:V+",
+      "red",
+      []
+    ],
+    [
+      "esp32:GND.1",
+      "servo5:GND",
+      "black",
+      []
+    ],
+    [
+      "esp32:26",
+      "servo6:PWM",
+      "green",
+      []
+    ],
+    [
+      "esp32:5V",
+      "servo6:V+",
+      "red",
+      []
+    ],
+    [
+      "esp32:GND.1",
+      "servo6:GND",
+      "black",
+      []
+    ],
+    [
+      "esp32:32",
+      "estopBtn:1.r",
+      "red",
+      []
+    ],
+    [
+      "estopBtn:2.r",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp32:4",
+      "joyUp:1.r",
+      "blue",
+      []
+    ],
+    [
+      "joyUp:2.r",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp32:5",
+      "joyDown:1.r",
+      "blue",
+      []
+    ],
+    [
+      "joyDown:2.r",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp32:12",
+      "joyLeft:1.r",
+      "blue",
+      []
+    ],
+    [
+      "joyLeft:2.r",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp32:23",
+      "joyRight:1.r",
+      "blue",
+      []
+    ],
+    [
+      "joyRight:2.r",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp32:21",
+      "oled:SDA",
+      "blue",
+      []
+    ],
+    [
+      "esp32:22",
+      "oled:SCL",
+      "purple",
+      []
+    ],
+    [
+      "esp32:3V3",
+      "oled:VCC",
+      "red",
+      []
+    ],
+    [
+      "esp32:GND.1",
+      "oled:GND",
+      "black",
+      []
+    ],
+    [
+      "esp32:18",
+      "sr:DS",
+      "green",
+      []
+    ],
+    [
+      "esp32:19",
+      "sr:SHCP",
+      "blue",
+      []
+    ],
+    [
+      "esp32:2",
+      "sr:STCP",
+      "purple",
+      []
+    ],
+    [
+      "sr:OE",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:MR",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "sr:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "sr:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q0",
+      "ledR1:1",
+      "yellow",
+      []
+    ],
+    [
+      "ledR1:2",
+      "keyLed1:A",
+      "yellow",
+      []
+    ],
+    [
+      "keyLed1:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q1",
+      "ledR2:1",
+      "yellow",
+      []
+    ],
+    [
+      "ledR2:2",
+      "keyLed2:A",
+      "yellow",
+      []
+    ],
+    [
+      "keyLed2:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q2",
+      "ledR3:1",
+      "yellow",
+      []
+    ],
+    [
+      "ledR3:2",
+      "keyLed3:A",
+      "yellow",
+      []
+    ],
+    [
+      "keyLed3:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q3",
+      "ledR4:1",
+      "yellow",
+      []
+    ],
+    [
+      "ledR4:2",
+      "keyLed4:A",
+      "yellow",
+      []
+    ],
+    [
+      "keyLed4:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q4",
+      "ledR5:1",
+      "yellow",
+      []
+    ],
+    [
+      "ledR5:2",
+      "keyLed5:A",
+      "yellow",
+      []
+    ],
+    [
+      "keyLed5:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q5",
+      "ledR6:1",
+      "yellow",
+      []
+    ],
+    [
+      "ledR6:2",
+      "keyLed6:A",
+      "yellow",
+      []
+    ],
+    [
+      "keyLed6:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q6",
+      "ledR7:1",
+      "green",
+      []
+    ],
+    [
+      "ledR7:2",
+      "readyLed:A",
+      "green",
+      []
+    ],
+    [
+      "readyLed:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr:Q7",
+      "ledR8:1",
+      "red",
+      []
+    ],
+    [
+      "ledR8:2",
+      "stopLed:A",
+      "red",
+      []
+    ],
+    [
+      "stopLed:C",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp32:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp32:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "esp32:34",
+      "pinKeypad:R1",
+      "orange",
+      []
+    ],
+    [
+      "esp32:35",
+      "pinKeypad:R2",
+      "orange",
+      []
+    ],
+    [
+      "esp32:VP",
+      "pinKeypad:R3",
+      "orange",
+      []
+    ],
+    [
+      "esp32:VN",
+      "pinKeypad:R4",
+      "orange",
+      []
+    ],
+    [
+      "esp32:0",
+      "pinKeypad:C1",
+      "blue",
+      []
+    ],
+    [
+      "esp32:15",
+      "pinKeypad:C2",
+      "blue",
+      []
+    ],
+    [
+      "esp32:27",
+      "pinKeypad:C3",
+      "blue",
+      []
+    ],
+    [
+      "esp32:33",
+      "pinKeypad:C4",
+      "blue",
+      []
+    ],
+    [
+      "esp32:3V3",
+      "keypadPullup1:1",
+      "red",
+      []
+    ],
+    [
+      "keypadPullup1:2",
+      "esp32:34",
+      "orange",
+      []
+    ],
+    [
+      "esp32:3V3",
+      "keypadPullup2:1",
+      "red",
+      []
+    ],
+    [
+      "keypadPullup2:2",
+      "esp32:35",
+      "orange",
+      []
+    ],
+    [
+      "esp32:3V3",
+      "keypadPullup3:1",
+      "red",
+      []
+    ],
+    [
+      "keypadPullup3:2",
+      "esp32:VP",
+      "orange",
+      []
+    ],
+    [
+      "esp32:3V3",
+      "keypadPullup4:1",
+      "red",
+      []
+    ],
+    [
+      "keypadPullup4:2",
+      "esp32:VN",
+      "orange",
+      []
+    ]
+  ],
+  "serialMonitor": {
+    "collapse": false,
+    "convertEol": false,
+    "display": "always",
+    "newline": "lf"
+  },
+  "dependencies": {}
 }

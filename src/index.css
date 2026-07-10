@@ -1175,7 +1175,7 @@ input[type='range']:disabled {
 }
 @media (max-width: 1280px) {
   .workspace {
-    grid-template-columns: 280px minmax(0, 1fr) 288px;
+    grid-template-columns: 272px minmax(0, 1fr) 284px;
   }
   .dock {
     height: 128px;
@@ -1183,6 +1183,87 @@ input[type='range']:disabled {
   .metric:nth-child(1) {
     display: none;
   }
+}
+@media (max-width: 1120px) {
+  .workspace {
+    grid-template-columns: 250px minmax(0, 1fr) 262px;
+  }
+  .brand-sub {
+    display: none;
+  }
+  .metric:nth-child(2) {
+    display: none;
+  }
+}
+@media (max-width: 980px) {
+  /* Collapse to a single scrolling column with the viewport up top. */
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .stage {
+    order: -1;
+    height: 52vh;
+    min-height: 320px;
+  }
+  .rail {
+    border: none;
+    border-top: 1px solid var(--line);
+  }
+  .dock {
+    height: 120px;
+  }
+}
+
+/* Short viewports: reclaim vertical space. */
+@media (max-height: 800px) {
+  .topbar {
+    height: 52px;
+  }
+  .dock {
+    height: 118px;
+  }
+}
+
+/* =============================================================================
+   Performance & smoothness
+   ============================================================================= */
+
+html,
+body {
+  overflow: hidden;
+}
+.rail {
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.dock-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+/* Isolate panel reflow/paint so frequent telemetry updates stay cheap. */
+.panel,
+.demo-card,
+.camera-controls {
+  contain: layout style;
+}
+/* Promote the viewport/overlays to their own compositor layers. */
+.viewport,
+.camera-controls,
+.demo-overlay {
+  will-change: transform;
+}
+/* Consistent, snappy interaction feedback everywhere. */
+.btn,
+.cam-btn,
+.speed-btn,
+.z-btn,
+.pin-pad button,
+.button-row button,
+.chip {
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* =============================================================================

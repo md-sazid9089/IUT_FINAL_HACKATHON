@@ -32,7 +32,7 @@ export function SceneRoot({ keyConfig }: SceneRootProps) {
   return (
     <Canvas
       shadows={{ enabled: true, type: PCFShadowMap }}
-      dpr={[1, 2]}
+      dpr={[1, 1.75]}
       gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
       camera={{ position: [1.15, -1.15, 1.0], up: [0, 0, 1], fov: 48, near: 0.01, far: 100 }}
     >
@@ -69,8 +69,8 @@ export function SceneRoot({ keyConfig }: SceneRootProps) {
       <ContactShadows
         position={[0.35, 0, 0.001]}
         scale={2.6}
-        resolution={1024}
-        blur={2.4}
+        resolution={512}
+        blur={2.6}
         opacity={0.5}
         far={1.2}
         color="#000000"

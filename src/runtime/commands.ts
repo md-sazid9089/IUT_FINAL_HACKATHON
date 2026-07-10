@@ -61,6 +61,15 @@ export const CartesianMoveCommandSchema = z.object({
   approachAxis: Vec3Schema,
 });
 
+export const CartesianJogCommandSchema = z.object({
+  type: z.literal('cartesian_jog'),
+  ...BaseFields,
+  /** Relative TCP step in the base frame (metres). */
+  delta: Vec3Schema,
+  approachAxis: Vec3Schema,
+});
+
+export const HomeCommandSchema = z.object({ type: z.literal('home'), ...BaseFields });
 export const StopCommandSchema = z.object({ type: z.literal('stop'), ...BaseFields });
 export const PauseCommandSchema = z.object({ type: z.literal('pause'), ...BaseFields });
 export const ResumeCommandSchema = z.object({ type: z.literal('resume'), ...BaseFields });
@@ -70,6 +79,8 @@ export const ResetCommandSchema = z.object({ type: z.literal('reset'), ...BaseFi
 export const RobotCommandSchema = z.discriminatedUnion('type', [
   MoveJointsCommandSchema,
   CartesianMoveCommandSchema,
+  CartesianJogCommandSchema,
+  HomeCommandSchema,
   StopCommandSchema,
   PauseCommandSchema,
   ResumeCommandSchema,
@@ -79,15 +90,26 @@ export const RobotCommandSchema = z.discriminatedUnion('type', [
 
 export type MoveJointsCommand = z.infer<typeof MoveJointsCommandSchema>;
 export type CartesianMoveCommand = z.infer<typeof CartesianMoveCommandSchema>;
+export type CartesianJogCommand = z.infer<typeof CartesianJogCommandSchema>;
 export type RobotCommand = z.infer<typeof RobotCommandSchema>;
 
 /** A command with required id/issuedAt filled in. */
 export type NormalizedCommand = RobotCommand & { id: string; issuedAt: number };
 
 /** Movement commands actually drive the robot; others are control verbs. */
-export const MOVEMENT_TYPES = new Set(['move_joints', 'cartesian_move']);
+export const MOVEMENT_TYPES = new Set(['move_joints', 'cartesian_move', 'cartesian_jog', 'home']);
 export function isMovementCommand(c: { type: string }): boolean {
   return MOVEMENT_TYPES.has(c.type);
+}
+
+/** Sources a human operator drives directly (jog/manual). */
+export const MANUAL_SOURCES: ReadonlySet<CommandSource> = new Set<CommandSource>([
+  'dashboard',
+  'joystick',
+  'keyboard',
+]);
+export function isManualSource(source: CommandSource): boolean {
+  return MANUAL_SOURCES.has(source);
 }
 
 let counter = 0;

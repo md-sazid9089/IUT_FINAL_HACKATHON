@@ -5,7 +5,8 @@ import { SceneRoot } from './scene/SceneRoot';
 import { TelemetryPanel } from './ui/TelemetryPanel';
 import { FkDiagnosticsPanel } from './ui/FkDiagnosticsPanel';
 import { RuntimePanel } from './ui/RuntimePanel';
-import { JointDebugPanel } from './ui/JointDebugPanel';
+import { JointControlPanel } from './manual/JointControlPanel';
+import { ManualControlPanel } from './manual/ManualControlPanel';
 import { IkPreflightPanel } from './ui/IkPreflightPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
 
@@ -36,12 +37,13 @@ export function App() {
     <div className="app">
       <header className="app-header">
         <h1>stylus_arm — Digital Twin</h1>
-        <span className="subtitle">Gate 1 · URDF render · key panel · live telemetry</span>
+        <span className="subtitle">Digital twin · unified command/safety/IK/runtime · manual joystick + keyboard</span>
       </header>
 
       <div className="app-body">
         <aside className="sidebar left">
           <RuntimePanel />
+          <ManualControlPanel />
           <TelemetryPanel />
           <FkDiagnosticsPanel />
         </aside>
@@ -52,7 +54,7 @@ export function App() {
         </main>
 
         <aside className="sidebar right">
-          <JointDebugPanel />
+          <JointControlPanel />
           <IkPreflightPanel keyConfig={keyConfig} />
         </aside>
       </div>

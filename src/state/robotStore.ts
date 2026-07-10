@@ -18,6 +18,12 @@ interface RobotState {
    * so the UI never shows fake zero telemetry.
    */
   tcp: Vec3Tuple | null;
+  /**
+   * World-frame unit tool approach axis of the rendered TCP (stylus local +Z),
+   * used so manual Cartesian jogs preserve the current orientation. `null`
+   * until the first sample after model load.
+   */
+  toolAxis: Vec3Tuple | null;
   /** Currently highlighted target key id (visualization only in Gate 1). */
   targetKey: string | null;
   /** Extracted base_link → stylus_tip kinematic chain (Gate 2). */
@@ -31,6 +37,7 @@ interface RobotState {
   setStatus: (status: LoadStatus, error?: string | null) => void;
   setJointMeta: (meta: JointMeta[]) => void;
   setTcp: (tcp: Vec3Tuple) => void;
+  setToolAxis: (axis: Vec3Tuple) => void;
   setTargetKey: (key: string | null) => void;
   setChain: (chain: KinematicChain) => void;
   setFkDiagnostics: (diag: PoseComparison) => void;
@@ -41,6 +48,7 @@ export const useRobotStore = create<RobotState>((set) => ({
   error: null,
   profile: DEFAULT_PROFILE,
   jointMeta: [],
+  toolAxis: null,
   tcp: null,
   targetKey: null,
   chain: null,
@@ -51,6 +59,8 @@ export const useRobotStore = create<RobotState>((set) => ({
   setJointMeta: (meta) => set({ jointMeta: meta }),
 
   setTcp: (tcp) => set({ tcp }),
+
+  setToolAxis: (toolAxis) => set({ toolAxis }),
 
   setTargetKey: (targetKey) => set({ targetKey }),
 

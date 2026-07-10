@@ -2,6 +2,7 @@ import type { JointMeta } from '../robot/RobotModelAdapter';
 import type { RobotProfile } from '../config/robotProfiles';
 import type { IkResult } from '../kinematics/ikTypes';
 import {
+  isManualSource,
   isMovementCommand,
   parseCommand,
   priorityOf,
@@ -50,6 +51,8 @@ export interface RuntimeOptions {
   /** The ONLY production sink that reaches RobotModelAdapter.setJointValues. */
   readonly applyJoints: (values: Record<string, number>) => void;
   readonly ikSolve?: IkSolveFn;
+  /** Current TCP position from the commanded joints (for relative jogs). */
+  readonly computeTcp?: (joints: Record<string, number>) => Vec3;
   readonly publish?: (snapshot: RuntimeSnapshot) => void;
   readonly now?: () => number;
   readonly maxJointJump?: number;
@@ -99,6 +102,7 @@ export class RuntimeController {
   private readonly now: () => number;
   private readonly applyJoints: (values: Record<string, number>) => void;
   private readonly ikSolve?: IkSolveFn;
+  private readonly computeTcp?: (joints: Record<string, number>) => Vec3;
   private readonly publishFn?: (snapshot: RuntimeSnapshot) => void;
 
   constructor(opts: RuntimeOptions) {
@@ -107,6 +111,7 @@ export class RuntimeController {
     this.current = { ...opts.initialJoints };
     this.applyJoints = opts.applyJoints;
     this.ikSolve = opts.ikSolve;
+    this.computeTcp = opts.computeTcp;
     this.publishFn = opts.publish;
     this.now = opts.now ?? (() => performance.now());
     this.maxJointJump = opts.maxJointJump ?? Math.PI;
@@ -172,6 +177,8 @@ export class RuntimeController {
         return this.handleResume(cmd);
       case 'move_joints':
       case 'cartesian_move':
+      case 'cartesian_jog':
+      case 'home':
         return this.handleMovement(cmd);
     }
   }
@@ -209,6 +216,7 @@ export class RuntimeController {
     this.pausedTrajectory = null;
     this.activeCommand = null;
     this.queue.length = 0;
+    this.planningToken += 1; // cancel any in-flight cartesian planning
     this.forceState('STOPPING', 'stopped', 'Stop: motion cancelled, queue cleared', cmd.source);
     this.forceState('READY', 'state_changed', 'Ready', cmd.source);
     this.publishNow();
@@ -250,6 +258,18 @@ export class RuntimeController {
       return { accepted: false, reason };
     }
 
+    // Manual input must not silently seize control from autonomous execution.
+    if (
+      this.activeCommand &&
+      isMovementCommand(this.activeCommand) &&
+      !isManualSource(this.activeCommand.source) &&
+      isManualSource(cmd.source)
+    ) {
+      const reason = `Rejected: ${this.activeCommand.source} owns motion; cancel it first`;
+      this.reject(reason, cmd.source);
+      return { accepted: false, reason };
+    }
+
     // Pre-check for move_joints happens here (before planning). Cartesian
     // targets are finite-checked by schema; joint pre-check runs post-IK.
     if (cmd.type === 'move_joints') {
@@ -260,9 +280,19 @@ export class RuntimeController {
       }
     }
 
-    // Arbitration: a strictly higher-priority command preempts the active one.
+    // Arbitration: a strictly higher-priority command preempts; a continuous
+    // manual jog also replaces any active manual movement for responsiveness.
     if (this.activeCommand && isMovementCommand(this.activeCommand)) {
-      if (priorityOf(cmd.source) > priorityOf(this.activeCommand.source)) {
+      const higher = priorityOf(cmd.source) > priorityOf(this.activeCommand.source);
+      // A continuous manual jog replaces any active manual movement; a same-
+      // source manual joint drag replaces its own in-flight move so sliders and
+      // the joystick stay responsive instead of queueing.
+      const jogReplace = cmd.type === 'cartesian_jog' && isManualSource(this.activeCommand.source);
+      const sliderReplace =
+        cmd.type === 'move_joints' &&
+        isManualSource(cmd.source) &&
+        cmd.source === this.activeCommand.source;
+      if (higher || jogReplace || sliderReplace) {
         this.log.add('warn', 'command_preempted', `Preempted ${this.activeCommand.source} command`, {
           source: cmd.source,
           t: this.now(),
@@ -329,6 +359,7 @@ export class RuntimeController {
         const done = this.activeCommand;
         this.activeCommand = null;
         this.forceState('READY', 'trajectory_completed', `Completed ${done?.type ?? 'move'}`, done?.source);
+        this.publishNow();
       }
     }
 
@@ -351,8 +382,21 @@ export class RuntimeController {
   private startMovement(cmd: NormalizedCommand): void {
     if (cmd.type === 'move_joints') {
       this.startJointMove(cmd);
+    } else if (cmd.type === 'home') {
+      const zeros: Record<string, number> = {};
+      for (const name of this.profile.activeJoints) zeros[name] = 0;
+      this.startJointMove({ type: 'move_joints', source: cmd.source, id: cmd.id, issuedAt: cmd.issuedAt, joints: zeros });
     } else if (cmd.type === 'cartesian_move') {
-      this.startCartesianMove(cmd);
+      this.startCartesianMove(cmd.position, cmd);
+    } else if (cmd.type === 'cartesian_jog') {
+      if (!this.computeTcp) {
+        this.reject('Jog unavailable (no TCP provider)', cmd.source);
+        this.forceState('READY', 'planning_failed', 'No TCP provider', cmd.source);
+        return;
+      }
+      const tcp = this.computeTcp(this.current);
+      const target: Vec3 = [tcp[0] + cmd.delta[0], tcp[1] + cmd.delta[1], tcp[2] + cmd.delta[2]];
+      this.startCartesianMove(target, cmd);
     }
   }
 
@@ -370,10 +414,11 @@ export class RuntimeController {
     this.activeCommand = cmd as NormalizedCommand;
     this.activeTrajectory = traj;
     this.forceState('EXECUTING', 'trajectory_started', `Executing ${cmd.type} from ${cmd.source}`, cmd.source);
+    this.publishNow();
   }
 
-  private startCartesianMove(cmd: NormalizedCommand): void {
-    if (cmd.type !== 'cartesian_move') return;
+  private startCartesianMove(position: Vec3, cmd: NormalizedCommand): void {
+    if (cmd.type !== 'cartesian_move' && cmd.type !== 'cartesian_jog') return;
     if (!this.ikSolve) {
       this.reject('Cartesian planning unavailable (no IK solver)', cmd.source);
       this.forceState('READY', 'planning_failed', 'No IK solver', cmd.source);
@@ -383,8 +428,9 @@ export class RuntimeController {
     this.planningToken += 1;
     const token = this.planningToken;
     this.forceState('PLANNING', 'planning_started', `Planning cartesian move from ${cmd.source}`, cmd.source);
+    this.publishNow();
 
-    this.ikSolve(cmd.position, cmd.approachAxis)
+    this.ikSolve(position, cmd.approachAxis)
       .then((result) => {
         // Discard if E-stopped, preempted, or superseded while planning.
         if (this.eStopped || token !== this.planningToken) return;
@@ -406,6 +452,7 @@ export class RuntimeController {
         }
         this.activeTrajectory = traj;
         this.forceState('EXECUTING', 'trajectory_started', 'Executing planned cartesian move', cmd.source);
+        this.publishNow();
       })
       .catch((err: unknown) => {
         if (this.eStopped || token !== this.planningToken) return;

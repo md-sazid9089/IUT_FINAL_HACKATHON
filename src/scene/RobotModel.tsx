@@ -32,6 +32,7 @@ export function RobotModel() {
   const setStatus = useRobotStore((s) => s.setStatus);
   const setJointMeta = useRobotStore((s) => s.setJointMeta);
   const setTcp = useRobotStore((s) => s.setTcp);
+  const setToolAxis = useRobotStore((s) => s.setToolAxis);
   const setChain = useRobotStore((s) => s.setChain);
   const setFkDiagnostics = useRobotStore((s) => s.setFkDiagnostics);
 
@@ -78,8 +79,13 @@ export function RobotModel() {
           initialJoints,
           applyJoints: (values) => adapter.setJointValues(values),
           ikSolve,
+          computeTcp: (joints) => computeForwardKinematics(chain, joints).tcp.position as Vec3,
           publish: (snapshot) => useRuntimeStore.getState().setSnapshot(snapshot),
           snapshotHz: 15,
+          // Short min-duration keeps manual jogs responsive; successive
+          // preempting steps chain into smooth continuous motion. Velocity
+          // limits are still enforced post-plan by validateTrajectory.
+          minDurationMs: 110,
         });
         runtimeRef.current = controller;
         setRuntime(controller);
@@ -88,6 +94,7 @@ export function RobotModel() {
         const initial = adapter.getTcpWorldPosition();
         lastTcp.current = initial;
         setTcp(initial);
+        setToolAxis(adapter.getTcpWorldToolAxis());
         publishDiagnostics();
         setStatus('ready');
       })
@@ -135,6 +142,7 @@ export function RobotModel() {
     ) {
       lastTcp.current = next;
       setTcp(next);
+      setToolAxis(adapterRef.current.getTcpWorldToolAxis());
       publishDiagnostics();
     }
   });

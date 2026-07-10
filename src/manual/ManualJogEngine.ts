@@ -1,6 +1,7 @@
 import type { CommandSource } from '../runtime/commands';
 import { isManualSource } from '../runtime/commands';
 import type { RuntimeState } from '../runtime/runtimeState';
+import { CartesianJoystickController } from './cartesianJoystickController';
 import {
   buildJogDelta,
   DEFAULT_APPROACH_AXIS,
@@ -10,7 +11,6 @@ import {
   keysToDirection,
   magnitude,
   manualJogGate,
-  normalizeDirection,
   SPEED_INCREMENTS,
   type SpeedMode,
   type Vec3,
@@ -32,8 +32,10 @@ export interface ManualStatus {
   /** Last emitted Cartesian delta (metres); zero when idle. */
   readonly movementVector: Vec3;
   readonly heldKeys: readonly string[];
-  /** Raw joystick+Z input vector (pre-normalisation). */
+  /** Combined joystick translation input [x, y, z] (pre-normalisation). */
   readonly joystickVector: Vec3;
+  /** Orientation-stick rotation input ∈ [-1,1] (Phase 1: display only). */
+  readonly rotationInput: number;
   readonly lastRejection: string | null;
 }
 
@@ -63,8 +65,8 @@ export class ManualJogEngine {
   private readonly onStatus?: (status: ManualStatus) => void;
 
   private readonly keys = new Set<string>();
-  private joystick: [number, number] = [0, 0];
-  private zButton = 0;
+  /** 3D Cartesian teleoperation input (both sticks + Z buttons). */
+  private readonly cartesian: CartesianJoystickController;
   private speedMode: SpeedMode = DEFAULT_SPEED_MODE;
 
   private activeSource: 'keyboard' | 'joystick' | null = null;
@@ -77,6 +79,7 @@ export class ManualJogEngine {
     this.getRuntimeStatus = opts.getRuntimeStatus;
     this.approachAxis = opts.approachAxis ?? (() => DEFAULT_APPROACH_AXIS);
     this.deadZone = opts.deadZone ?? DEFAULT_DEAD_ZONE;
+    this.cartesian = new CartesianJoystickController(this.deadZone);
     this.onStatus = opts.onStatus;
   }
 
@@ -107,39 +110,44 @@ export class ManualJogEngine {
     if (this.keys.delete(k)) this.notify();
   }
 
+  /** Position stick (stick 1): x → TCP ±X, y → TCP ±Y. */
   setJoystick(x: number, y: number): void {
-    this.joystick = [x, y];
+    this.cartesian.setPositionStick(x, y);
     this.notify();
   }
 
   clearJoystick(): void {
-    if (this.joystick[0] !== 0 || this.joystick[1] !== 0) {
-      this.joystick = [0, 0];
-      this.notify();
-    }
+    this.cartesian.clearPositionStick();
+    this.notify();
+  }
+
+  /** Orientation stick (stick 2): y → TCP ±Z, x → tool rotation. */
+  setOrientationStick(x: number, y: number): void {
+    this.cartesian.setOrientationStick(x, y);
+    this.notify();
+  }
+
+  clearOrientationStick(): void {
+    this.cartesian.clearOrientationStick();
+    this.notify();
   }
 
   /** Press-and-hold Z: dir = +1 (+Z) or −1 (−Z). */
   pressZ(dir: 1 | -1): void {
-    if (this.zButton !== dir) {
-      this.zButton = dir;
-      this.notify();
-    }
+    this.cartesian.pressZ(dir);
+    this.notify();
   }
 
   releaseZ(): void {
-    if (this.zButton !== 0) {
-      this.zButton = 0;
-      this.notify();
-    }
+    this.cartesian.releaseZ();
+    this.notify();
   }
 
   /** Clear ALL held input (blur, hidden tab, unmount). Halts motion promptly. */
   clearAll(): void {
-    const had = this.keys.size > 0 || this.joystick[0] !== 0 || this.joystick[1] !== 0 || this.zButton !== 0;
+    const had = this.keys.size > 0 || this.cartesian.hasInput();
     this.keys.clear();
-    this.joystick = [0, 0];
-    this.zButton = 0;
+    this.cartesian.clearAll();
     if (had || this.wasEmitting) {
       this.finishEmitting();
     }
@@ -178,8 +186,7 @@ export class ManualJogEngine {
 
     const kbDir = keysToDirection(this.keys);
     const kbActive = magnitude(kbDir) > 0;
-    const jsRaw: Vec3 = [this.joystick[0], this.joystick[1], this.zButton];
-    const jsActive = magnitude(normalizeDirection(jsRaw, this.deadZone)) > 0;
+    const jsActive = this.cartesian.hasInput();
 
     let source: 'keyboard' | 'joystick' | null = null;
     let rawDir: Vec3 = [0, 0, 0];
@@ -188,7 +195,7 @@ export class ManualJogEngine {
       rawDir = kbDir;
     } else if (jsActive) {
       source = 'joystick';
-      rawDir = jsRaw;
+      rawDir = this.cartesian.translation();
     }
 
     if (source === null) {
@@ -233,7 +240,8 @@ export class ManualJogEngine {
       activeSource: this.activeSource,
       movementVector: [...this.movement],
       heldKeys: [...this.keys],
-      joystickVector: [this.joystick[0], this.joystick[1], this.zButton],
+      joystickVector: this.cartesian.translation(),
+      rotationInput: this.cartesian.input().yaw,
       lastRejection: this.lastRejection,
     };
   }
@@ -242,8 +250,7 @@ export class ManualJogEngine {
 
   private clearInputOnly(): void {
     this.keys.clear();
-    this.joystick = [0, 0];
-    this.zButton = 0;
+    this.cartesian.clearAll();
   }
 
   /** Stop emitting; issue a guarded system Stop only if we owned the motion. */

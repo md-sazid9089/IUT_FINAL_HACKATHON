@@ -622,6 +622,8 @@ select.readout-value {
   display: flex;
   gap: 0.85rem;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   margin-bottom: 0.6rem;
 }
 .manual-joystick {

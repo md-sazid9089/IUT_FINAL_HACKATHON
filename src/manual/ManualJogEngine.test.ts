@@ -154,6 +154,28 @@ describe('ManualJogEngine — joystick emission', () => {
     expect(h.lastDelta()).toEqual([0, 0, -N]);
   });
 
+  it('orientation stick up/down emits +Z / -Z', () => {
+    const h = harness();
+    h.engine.setOrientationStick(0, 1);
+    h.engine.tick();
+    expect(h.lastDelta()).toEqual([0, 0, N]);
+    h.engine.setOrientationStick(0, -1);
+    h.engine.tick();
+    expect(h.lastDelta()).toEqual([0, 0, -N]);
+    h.engine.clearOrientationStick();
+    const before = h.jogs().length;
+    h.engine.tick();
+    expect(h.jogs()).toHaveLength(before); // release stops emission
+  });
+
+  it('orientation stick rotation alone emits no translation (phase 1)', () => {
+    const h = harness();
+    h.engine.setOrientationStick(1, 0);
+    h.engine.tick();
+    expect(h.jogs()).toHaveLength(0);
+    expect(h.engine.getStatus().rotationInput).toBe(1);
+  });
+
   it('keyboard takes precedence over joystick', () => {
     const h = harness();
     h.engine.setJoystick(1, 0); // +X

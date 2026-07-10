@@ -21,11 +21,15 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return el.isContentEditable === true;
 }
 
-export interface ManualJogControls {
+export interface CartesianJoystickControls {
   readonly status: ManualStatus;
   readonly setBaseSpeed: (mode: SpeedMode) => void;
-  readonly setJoystick: (x: number, y: number) => void;
-  readonly clearJoystick: () => void;
+  /** Position stick: x → TCP ±X, y → TCP ±Y. */
+  readonly setPositionStick: (x: number, y: number) => void;
+  readonly clearPositionStick: () => void;
+  /** Orientation stick: y → TCP ±Z, x → tool rotation (Phase 1: display). */
+  readonly setOrientationStick: (x: number, y: number) => void;
+  readonly clearOrientationStick: () => void;
   readonly pressZ: (dir: 1 | -1) => void;
   readonly releaseZ: () => void;
   readonly home: () => void;
@@ -34,17 +38,21 @@ export interface ManualJogControls {
 }
 
 /**
- * Wires the ManualJogEngine to the browser: a fixed-rate emission loop, global
- * keyboard state, and every input-loss safety event (blur, hidden tab, unmount).
- * The engine remains DOM-free; this hook is the single place DOM meets it.
+ * 3D Cartesian teleoperation hook. Wires the ManualJogEngine (which owns the
+ * CartesianJoystickController) to the browser: a fixed-rate emission loop,
+ * global keyboard state, and every input-loss safety event (blur, hidden tab,
+ * unmount). The engine remains DOM-free; this hook is the single place DOM
+ * meets it. All motion flows: sticks → cartesian_jog → RuntimeController →
+ * DLS IK worker → joints. No direct joint control exists here.
  */
-export function useManualJog(): ManualJogControls {
+export function useCartesianJoystick(): CartesianJoystickControls {
   const [status, setStatus] = useState<ManualStatus>({
     speedMode: DEFAULT_SPEED_MODE,
     activeSource: null,
     movementVector: [0, 0, 0],
     heldKeys: [],
     joystickVector: [0, 0, 0],
+    rotationInput: 0,
     lastRejection: null,
   });
 
@@ -168,7 +176,7 @@ export function useManualJog(): ManualJogControls {
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', clearEverything);
       document.removeEventListener('visibilitychange', onVisibility);
-      // Unmount: clear timers (above) and all key/joystick state.
+      // Unmount: clear timers (above) and all stick/key state.
       engine.clearAll();
     };
   }, [engine, applyEffectiveSpeed]);
@@ -176,8 +184,10 @@ export function useManualJog(): ManualJogControls {
   return {
     status,
     setBaseSpeed,
-    setJoystick: useCallback((x: number, y: number) => engine.setJoystick(x, y), [engine]),
-    clearJoystick: useCallback(() => engine.clearJoystick(), [engine]),
+    setPositionStick: useCallback((x: number, y: number) => engine.setJoystick(x, y), [engine]),
+    clearPositionStick: useCallback(() => engine.clearJoystick(), [engine]),
+    setOrientationStick: useCallback((x: number, y: number) => engine.setOrientationStick(x, y), [engine]),
+    clearOrientationStick: useCallback(() => engine.clearOrientationStick(), [engine]),
     pressZ: useCallback((dir: 1 | -1) => engine.pressZ(dir), [engine]),
     releaseZ: useCallback(() => engine.releaseZ(), [engine]),
     home: useCallback(() => engine.home(), [engine]),

@@ -1,0 +1,52 @@
+# Robotics digital twin — Docker Compose.
+#
+# Development:  docker compose --profile dev up          → http://localhost:5173
+# Production:   docker compose --profile prod up --build → http://localhost:8080
+#
+# Env values come from an optional .env file (see .env.example). Defaults keep a
+# fully self-contained simulation: no hardware, no agent, no secrets required.
+
+services:
+  # ---- Development: Vite dev server, hot reload, source mounted -------------
+  dashboard-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: robotics-twin-dev:latest
+    ports:
+      - "5173:5173"
+    volumes:
+      # Live-edit the whole project; keep the image's node_modules (anon volume).
+      - .:/app
+      - /app/node_modules
+    environment:
+      # Poll-based file watching makes HMR reliable across bind mounts.
+      CHOKIDAR_USEPOLLING: "true"
+      VITE_APP_MODE: "${VITE_APP_MODE:-simulation}"
+      VITE_HARDWARE_ENABLED: "${VITE_HARDWARE_ENABLED:-false}"
+      VITE_AGENT_ENABLED: "${VITE_AGENT_ENABLED:-false}"
+      VITE_API_URL: "${VITE_API_URL:-}"
+    profiles: ["dev"]
+
+  # ---- Production: static bundle served by nginx ---------------------------
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # VITE_* are inlined at BUILD time; pass them here to bake them in.
+        VITE_APP_MODE: "${VITE_APP_MODE:-simulation}"
+        VITE_HARDWARE_ENABLED: "${VITE_HARDWARE_ENABLED:-false}"
+        VITE_AGENT_ENABLED: "${VITE_AGENT_ENABLED:-false}"
+        VITE_API_URL: "${VITE_API_URL:-}"
+    image: robotics-twin:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    profiles: ["prod"]

@@ -15,6 +15,33 @@ import { IkWorkerClient } from '../kinematics/ikWorkerClient';
 
 const URDF_URL = '/robot/6_dof_arm.urdf';
 const TCP_EPS = 1e-6;
+/** Cap for pushing telemetry/diagnostics into React (~30 Hz). */
+const TELEMETRY_INTERVAL_MS = 33;
+
+/**
+ * Visual-only material pass: enables shadows and gives the URDF meshes a clean,
+ * semi-matte industrial finish. Geometry is never modified, and metalness is
+ * kept low so surfaces read correctly without an environment map.
+ */
+function enhanceRobotMaterials(robot: URDFRobot): void {
+  robot.traverse((obj) => {
+    const mesh = obj as unknown as { isMesh?: boolean; castShadow?: boolean; receiveShadow?: boolean; material?: unknown };
+    if (!mesh.isMesh) return;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    const apply = (m: unknown) => {
+      const mat = m as { metalness?: number; roughness?: number; envMapIntensity?: number; needsUpdate?: boolean };
+      if (mat && typeof mat.metalness === 'number') {
+        mat.metalness = 0.25;
+        mat.roughness = 0.5;
+        mat.envMapIntensity = 0.9;
+        mat.needsUpdate = true;
+      }
+    };
+    if (Array.isArray(mesh.material)) mesh.material.forEach(apply);
+    else apply(mesh.material);
+  });
+}
 
 /**
  * Loads the URDF, then hands the adapter to the RuntimeController. From this
@@ -28,6 +55,11 @@ export function RobotModel() {
   const runtimeRef = useRef<RuntimeController | null>(null);
   const [robot, setRobot] = useState<URDFRobot | null>(null);
   const lastTcp = useRef<Vec3Tuple | null>(null);
+  // Telemetry (TCP/tool-axis/FK diagnostics) is pushed to React at a capped rate
+  // so per-frame store writes and FK math never compete with the 60 fps render
+  // loop. The robot itself still ticks and renders every frame — motion stays
+  // perfectly smooth; only the on-screen numbers refresh at ~33 Hz.
+  const telemetryAccumMs = useRef(0);
 
   const setStatus = useRobotStore((s) => s.setStatus);
   const setJointMeta = useRobotStore((s) => s.setJointMeta);
@@ -51,6 +83,7 @@ export function RobotModel() {
         setChain(chain);
         setRobot(loaded);
         loaded.updateMatrixWorld(true);
+        enhanceRobotMaterials(loaded);
 
         // Build the runtime around the adapter (the only URDF setter path).
         const profile = useRobotStore.getState().profile;
@@ -130,8 +163,16 @@ export function RobotModel() {
   useFrame((_, delta) => {
     const controller = runtimeRef.current;
     if (!robot || !controller) return;
-    // Drive the runtime; it applies joint values to the adapter this tick.
-    controller.tick(Math.min(delta * 1000, 100));
+    const dtMs = Math.min(delta * 1000, 100);
+    // Drive the runtime every frame → robot motion is rendered at full fps.
+    controller.tick(dtMs);
+
+    // Throttle the React-facing telemetry/diagnostics to keep the main thread
+    // free for the render loop (no visual effect on the robot's motion).
+    telemetryAccumMs.current += dtMs;
+    if (telemetryAccumMs.current < TELEMETRY_INTERVAL_MS) return;
+    telemetryAccumMs.current = 0;
+
     const next = adapterRef.current.getTcpWorldPosition();
     const prev = lastTcp.current;
     if (

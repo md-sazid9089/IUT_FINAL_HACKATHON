@@ -12,6 +12,7 @@ import { IkPreflightPanel } from './ui/IkPreflightPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
 import { PinPanel } from './ui/PinPanel';
 import { HardwarePanel } from './ui/HardwarePanel';
+import { VoiceControlPanel } from './ui/VoiceControlPanel';
 import { TopBar } from './ui/TopBar';
 import { CameraControls } from './ui/CameraControls';
 import { DemoMode } from './ui/DemoMode';
@@ -50,6 +51,7 @@ export function App() {
           <div className="rail-head">Controls</div>
           <RuntimePanel />
           <ManualControlPanel />
+          <VoiceControlPanel />
           <JointControlPanel />
           <PinPanel keyConfig={keyConfig} />
         </aside>

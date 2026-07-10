@@ -1,0 +1,11 @@
+{
+  "kit": "IUT Final Hackathon Starter Kit",
+  "version": "1.0",
+  "purpose": "Approved architecture, immutable resources, Copilot prompts, gate workflow, and review templates",
+  "source_files": [
+    "resources/6_dof_arm.urdf",
+    "resources/key.config.json",
+    "resources/Hackathon-Problem-Statement-Final-Round.pdf"
+  ],
+  "start": "START_HERE.md"
+}

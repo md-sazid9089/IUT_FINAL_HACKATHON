@@ -1,22 +1,60 @@
-# IUT Final Hackathon — Browser Robotic Arm Digital Twin
+# Vantage Arm Lab
 
-## Source-of-truth files
+A browser-first robotic-arm digital twin and software-in-the-loop validation platform for the IUT Final Hackathon.
 
-- `resources/Hackathon Problem Statement Final Round.pdf`
-- `resources/6_dof_arm.urdf`
-- `resources/key.config.json`
-- `docs/architecture.md`
+## Product statement
 
-## Implementation instructions
+Every interaction method is an adapter into one validated motion pipeline:
 
-GitHub Copilot must read:
+```text
+Input
+→ normalization
+→ schema validation
+→ deterministic safety
+→ planning
+→ IK
+→ post-IK validation
+→ trajectory execution
+→ URDF scene and telemetry
+```
 
-1. The official problem statement
-2. The complete URDF
-3. The key configuration
-4. The approved architecture
-5. `COPILOT_MASTER_IMPLEMENTATION_PROMPT.md`
+## Official resources
 
-Copilot must implement the project gate by gate and stop after each gate for review.
+The immutable organizer resources are stored in `resources/`.
 
-The organizer-provided URDF, PDF, and JSON must never be modified.
+## Approved architecture
+
+Read:
+
+```text
+docs/architecture.md
+```
+
+## Copilot execution
+
+Read:
+
+```text
+START_HERE.md
+COPILOT_MASTER_IMPLEMENTATION_PROMPT.md
+prompts/
+```
+
+## Core deliverables
+
+- URDF visualization
+- live joint and TCP telemetry
+- six-key panel at supplied coordinates
+- independent FK
+- robust IK
+- joint, joystick, and keyboard controls
+- deterministic voice control with typed fallback
+- autonomous six-character PIN using keys 1–6
+- ≤5 mm measured contact validation
+- deterministic safety gate and E-stop
+- electrical PoC
+- tests, documentation, deployment, and demo evidence
+
+## Development rule
+
+Do not skip implementation gates. Do not hardcode key joint solutions. Do not let any UI component or input adapter manipulate URDF joints directly.

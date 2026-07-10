@@ -1,0 +1,4 @@
+resources/*.urdf binary
+resources/*.json binary
+public/robot/*.urdf binary
+public/config/*.json binary

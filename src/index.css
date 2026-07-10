@@ -168,6 +168,54 @@ body,
   color: var(--warn);
 }
 
+.state-badge {
+  display: inline-block;
+  color: #1e222a;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.35rem 0;
+}
+
+.button-row button {
+  flex: 1;
+}
+
+.estop-btn {
+  background: #bf616a;
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  border-radius: 4px;
+}
+
+.event-log {
+  max-height: 8rem;
+  overflow-y: auto;
+  font-size: 0.66rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 0.35rem;
+}
+
+.event-error {
+  color: #bf616a;
+}
+
+.event-warn {
+  color: #ebcb8b;
+}
+
+.event-info {
+  color: var(--muted);
+}
+
 .overlay {
   position: absolute;
   inset: 0;

@@ -12,8 +12,6 @@ interface RobotState {
   error: string | null;
   profile: RobotProfile;
   jointMeta: JointMeta[];
-  /** Current commanded joint values (includes locked joints at their lock value). */
-  jointValues: Record<string, number>;
   /**
    * World position of the rendered TCP link, in the base_link (world) frame, in
    * metres. `null` until the first valid sample is published after model load,
@@ -32,7 +30,6 @@ interface RobotState {
 
   setStatus: (status: LoadStatus, error?: string | null) => void;
   setJointMeta: (meta: JointMeta[]) => void;
-  setJointValue: (name: string, value: number) => void;
   setTcp: (tcp: Vec3Tuple) => void;
   setTargetKey: (key: string | null) => void;
   setChain: (chain: KinematicChain) => void;
@@ -44,7 +41,6 @@ export const useRobotStore = create<RobotState>((set) => ({
   error: null,
   profile: DEFAULT_PROFILE,
   jointMeta: [],
-  jointValues: {},
   tcp: null,
   targetKey: null,
   chain: null,
@@ -52,23 +48,7 @@ export const useRobotStore = create<RobotState>((set) => ({
 
   setStatus: (status, error = null) => set({ status, error }),
 
-  setJointMeta: (meta) =>
-    set((state) => {
-      const jointValues: Record<string, number> = {};
-      for (const m of meta) {
-        jointValues[m.name] = state.profile.lockedJoints[m.name] ?? 0;
-      }
-      return { jointMeta: meta, jointValues };
-    }),
-
-  setJointValue: (name, value) =>
-    set((state) => {
-      // Locked joints (e.g. stylus_pitch in the competition profile) are held.
-      if (name in state.profile.lockedJoints) {
-        return {};
-      }
-      return { jointValues: { ...state.jointValues, [name]: value } };
-    }),
+  setJointMeta: (meta) => set({ jointMeta: meta }),
 
   setTcp: (tcp) => set({ tcp }),
 

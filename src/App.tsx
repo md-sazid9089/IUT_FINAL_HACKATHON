@@ -4,6 +4,7 @@ import { useRobotStore } from './state/robotStore';
 import { SceneRoot } from './scene/SceneRoot';
 import { TelemetryPanel } from './ui/TelemetryPanel';
 import { FkDiagnosticsPanel } from './ui/FkDiagnosticsPanel';
+import { RuntimePanel } from './ui/RuntimePanel';
 import { JointDebugPanel } from './ui/JointDebugPanel';
 import { IkPreflightPanel } from './ui/IkPreflightPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
@@ -40,6 +41,7 @@ export function App() {
 
       <div className="app-body">
         <aside className="sidebar left">
+          <RuntimePanel />
           <TelemetryPanel />
           <FkDiagnosticsPanel />
         </aside>

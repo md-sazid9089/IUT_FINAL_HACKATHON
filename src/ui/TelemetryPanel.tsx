@@ -1,21 +1,22 @@
 import { useRobotStore } from '../state/robotStore';
+import { useRuntimeStore } from '../state/runtimeStore';
 
 function fmt(n: number): string {
   return n.toFixed(4);
 }
 
 /**
- * Read-only telemetry: discovered joint metadata, live joint values, and the
- * rendered TCP world position. Also exposes a target-key selector (visualization
- * only — no motion in Gate 1).
+ * Read-only telemetry: discovered joint metadata, live joint values (from the
+ * runtime snapshot), and the rendered TCP world position. Also exposes a
+ * target-key selector (visualization only — no motion in Gate 1).
  */
 export function TelemetryPanel() {
   const jointMeta = useRobotStore((s) => s.jointMeta);
-  const jointValues = useRobotStore((s) => s.jointValues);
   const tcp = useRobotStore((s) => s.tcp);
   const profile = useRobotStore((s) => s.profile);
   const targetKey = useRobotStore((s) => s.targetKey);
   const setTargetKey = useRobotStore((s) => s.setTargetKey);
+  const jointValues = useRuntimeStore((s) => s.snapshot?.jointValues) ?? {};
 
   return (
     <section className="panel">

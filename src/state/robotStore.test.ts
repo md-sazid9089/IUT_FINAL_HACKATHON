@@ -12,7 +12,6 @@ beforeEach(() => {
     status: 'idle',
     error: null,
     jointMeta: [],
-    jointValues: {},
     tcp: null,
     targetKey: null,
   });

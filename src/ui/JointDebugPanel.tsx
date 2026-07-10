@@ -1,25 +1,33 @@
 import { useRobotStore } from '../state/robotStore';
+import { useRuntimeStore } from '../state/runtimeStore';
+import { getRuntime } from '../runtime/runtimeInstance';
 
 /**
- * TEMPORARY raw joint-debug sliders (Gate 1 only).
+ * Manual joint control (dashboard source).
  *
- * These write directly to the store, which the RobotModel applies through the
- * RobotModelAdapter boundary. This panel exists ONLY to prove the digital twin
- * responds to joint changes and MUST BE REMOVED once the command/safety/runtime
- * pipeline lands (Gate 4/5). It bypasses no adapter boundary, but it is not a
- * legitimate long-term input path.
+ * Sliders no longer touch the robot directly. Each change submits a validated
+ * `move_joints` command through the RuntimeController, which arbitrates,
+ * safety-checks, plans a trajectory, and drives the adapter. This is the only
+ * way this panel can move the robot.
  */
 export function JointDebugPanel() {
   const jointMeta = useRobotStore((s) => s.jointMeta);
-  const jointValues = useRobotStore((s) => s.jointValues);
-  const setJointValue = useRobotStore((s) => s.setJointValue);
   const profile = useRobotStore((s) => s.profile);
+  const snapshot = useRuntimeStore((s) => s.snapshot);
+  const jointValues = snapshot?.jointValues ?? {};
+  const state = snapshot?.state ?? 'BOOTING';
+  const disabled = state !== 'READY' && state !== 'EXECUTING';
+
+  function command(name: string, value: number) {
+    getRuntime()?.submit({ type: 'move_joints', source: 'dashboard', joints: { [name]: value } });
+  }
 
   return (
     <section className="panel">
       <h2>
-        Joint debug <span className="temp-badge">TEMPORARY — remove in Gate 4/5</span>
+        Manual joints <span className="temp-badge">dashboard → runtime</span>
       </h2>
+      <p className="muted small">Slider changes are validated commands, not direct joint writes.</p>
       {jointMeta.length === 0 ? <p className="muted">Waiting for robot…</p> : null}
       {jointMeta
         .filter((m) => m.type === 'revolute')
@@ -39,8 +47,8 @@ export function JointDebugPanel() {
                 max={m.upper}
                 step={0.001}
                 value={value}
-                disabled={locked}
-                onChange={(e) => setJointValue(m.name, Number(e.target.value))}
+                disabled={locked || disabled}
+                onChange={(e) => command(m.name, Number(e.target.value))}
               />
               <span className="mono slider-value">{value.toFixed(3)}</span>
             </div>

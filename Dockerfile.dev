@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1
+
+# =============================================================================
+# Development image — Vite dev server with hot reload.
+# Source is bind-mounted by docker-compose; node_modules stays in the image.
+# =============================================================================
+FROM node:22-alpine
+WORKDIR /app
+
+# Install dependencies first for better layer caching. `npm ci` is primary; the
+# fallback covers the npm cross-platform optional-deps gap (Rolldown musl /
+# @emnapi binaries missing from a lockfile generated on another OS).
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+# Copy the source so the image is also runnable standalone (compose overlays a
+# bind mount for live editing).
+COPY . .
+
+EXPOSE 5173
+
+# Bind to 0.0.0.0 so the dev server is reachable from the host.
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

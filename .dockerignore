@@ -1,0 +1,38 @@
+# Build context excludes for Docker. Keeps the build reproducible and the image
+# free of node_modules, VCS, local env, and non-build artifacts. Source used by
+# `tsc` / `vite build` (everything under tsconfig `include`) is NOT excluded, so
+# the in-container build behaves identically to a local build.
+
+# Dependencies & build output (reinstalled / rebuilt inside the image)
+node_modules
+dist
+dist-ssr
+coverage
+
+# VCS & CI
+.git
+.gitignore
+.github
+
+# Editor / OS
+.vscode
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# Local environment files — never bake secrets. Keep the example.
+.env
+.env.*
+!.env.example
+
+# Docker artifacts (not needed inside the copied build context)
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+.dockerignore
+docker
+
+# End-to-end / browser test artifacts not needed for the production build
+e2e
+tests

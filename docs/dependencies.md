@@ -43,6 +43,9 @@ this file whenever dependencies change.
 | `eslint-plugin-react-hooks` | 7.0.0   | React hooks rules                      |
 | `globals`                   | 17.7.0  | Global definitions for flat config     |
 | `prettier`                  | 3.6.2   | Formatting                             |
+| `playwright`                | 1.61.1  | Browser smoke tests                    |
+
+Gate 9 adds `npm run test:e2e` for a production-preview smoke check. No optional AI or hardware credentials are required for core tests.
 
 ## Compatibility verification (why these versions)
 

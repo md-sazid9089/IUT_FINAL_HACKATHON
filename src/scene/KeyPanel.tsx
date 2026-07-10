@@ -1,4 +1,6 @@
-import { Line, Text } from '@react-three/drei';
+import { Line } from '@react-three/drei';
+import { useMemo } from 'react';
+import * as THREE from 'three';
 import type { KeyConfig } from '../config/keyConfig';
 import { usePinStore } from '../pin/pinStore';
 import { approachUnitVector, coordToTuple, keyButtonCenter, type Vec3Tuple } from './coordinates';
@@ -9,6 +11,28 @@ const APPROACH_INDICATOR_LENGTH = 0.06;
 
 interface KeyPanelProps {
   config: KeyConfig;
+}
+
+function KeyLabel({ id, position }: { id: string; position: Vec3Tuple }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, 128, 128);
+    ctx.fillStyle = '#e5e9f0';
+    ctx.font = 'bold 72px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(id, 64, 64);
+    return new THREE.CanvasTexture(canvas);
+  }, [id]);
+
+  return (
+    <sprite position={position} scale={[0.035, 0.035, 1]}>
+      <spriteMaterial map={texture} transparent depthWrite={false} />
+    </sprite>
+  );
 }
 
 /**
@@ -59,15 +83,7 @@ export function KeyPanel({ config }: KeyPanelProps) {
             {/* Approach-axis indicator (from above down to the contact point) */}
             <Line points={[indicatorStart, contact]} color="#a3be8c" lineWidth={2} />
             {/* Key label */}
-            <Text
-              position={[contact[0], contact[1], contact[2] + 0.03]}
-              fontSize={0.02}
-              color="#e5e9f0"
-              anchorX="center"
-              anchorY="middle"
-            >
-              {id}
-            </Text>
+            <KeyLabel id={id} position={[contact[0], contact[1], contact[2] + 0.03]} />
           </group>
         );
       })}

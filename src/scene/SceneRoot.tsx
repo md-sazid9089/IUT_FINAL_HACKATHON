@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { Grid, OrbitControls } from '@react-three/drei';
+import { PCFShadowMap } from 'three';
 import type { KeyConfig } from '../config/keyConfig';
 import { useRobotStore } from '../state/robotStore';
 import { coordToTuple, type Vec3Tuple } from './coordinates';
@@ -26,7 +27,7 @@ export function SceneRoot({ keyConfig }: SceneRootProps) {
 
   return (
     <Canvas
-      shadows
+      shadows={{ enabled: true, type: PCFShadowMap }}
       camera={{ position: [1.1, -1.1, 1.0], up: [0, 0, 1], fov: 50, near: 0.01, far: 100 }}
     >
       <color attach="background" args={['#1e222a']} />
@@ -68,7 +69,7 @@ export function SceneRoot({ keyConfig }: SceneRootProps) {
 
       <RobotModel />
       {keyConfig ? <KeyPanel config={keyConfig} /> : null}
-      <TcpMarker position={tcp} />
+      {tcp ? <TcpMarker position={tcp} /> : null}
       {targetPosition ? <TargetMarker position={targetPosition} /> : null}
 
       <OrbitControls makeDefault target={[0.55, 0, 0.2]} />

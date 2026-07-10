@@ -9,40 +9,40 @@ this file whenever dependencies change.
 
 ## Runtime dependencies
 
-| Package | Version | Purpose |
-|---|---|---|
-| `react` | 19.2.7 | UI |
-| `react-dom` | 19.2.7 | DOM renderer |
-| `three` | 0.185.1 | 3D engine |
-| `@react-three/fiber` | 9.6.1 | React renderer for three |
-| `@react-three/drei` | 10.7.7 | Scene helpers (Grid, OrbitControls, Line, Text) |
-| `urdf-loader` | 0.13.1 | Browser URDF loading/parsing |
-| `zustand` | 5.0.14 | Snapshot state store |
-| `zod` | 4.4.3 | Runtime validation of key config |
-| `gl-matrix` | 3.4.4 | Spatial math (reserved for FK/IK gates) |
+| Package              | Version | Purpose                                         |
+| -------------------- | ------- | ----------------------------------------------- |
+| `react`              | 19.2.7  | UI                                              |
+| `react-dom`          | 19.2.7  | DOM renderer                                    |
+| `three`              | 0.185.1 | 3D engine                                       |
+| `@react-three/fiber` | 9.6.1   | React renderer for three                        |
+| `@react-three/drei`  | 10.7.7  | Scene helpers (Grid, OrbitControls, Line, Text) |
+| `urdf-loader`        | 0.13.1  | Browser URDF loading/parsing                    |
+| `zustand`            | 5.0.14  | Snapshot state store                            |
+| `zod`                | 4.4.3   | Runtime validation of key config                |
+| `gl-matrix`          | 3.4.4   | Spatial math (reserved for FK/IK gates)         |
 
 ## Dev / tooling dependencies
 
-| Package | Version | Purpose |
-|---|---|---|
-| `typescript` | 5.9.3 | Strict typecheck |
-| `vite` | 8.1.4 | Build/dev server |
-| `@vitejs/plugin-react` | 6.0.3 | React + Fast Refresh |
-| `vitest` | 4.1.10 | Unit test runner |
-| `jsdom` | 29.1.1 | DOM environment for tests |
-| `@testing-library/react` | 16.3.2 | Component testing (later gates) |
-| `@testing-library/dom` | 10.4.1 | Required peer of testing-library/react |
-| `@testing-library/jest-dom` | 6.9.1 | DOM matchers |
-| `@types/react` | 19.2.17 | React types |
-| `@types/react-dom` | 19.2.3 | React DOM types |
-| `@types/three` | 0.185.0 | Three.js types |
-| `@types/node` | 24.13.3 | Node types |
-| `eslint` | 9.39.4 | Linting |
-| `@eslint/js` | 9.39.4 | ESLint recommended config |
-| `typescript-eslint` | 8.63.0 | TS lint rules (flat config) |
-| `eslint-plugin-react-hooks` | 7.0.0 | React hooks rules |
-| `globals` | 17.7.0 | Global definitions for flat config |
-| `prettier` | 3.6.2 | Formatting |
+| Package                     | Version | Purpose                                |
+| --------------------------- | ------- | -------------------------------------- |
+| `typescript`                | 5.9.3   | Strict typecheck                       |
+| `vite`                      | 8.1.4   | Build/dev server                       |
+| `@vitejs/plugin-react`      | 6.0.3   | React + Fast Refresh                   |
+| `vitest`                    | 4.1.10  | Unit test runner                       |
+| `jsdom`                     | 29.1.1  | DOM environment for tests              |
+| `@testing-library/react`    | 16.3.2  | Component testing (later gates)        |
+| `@testing-library/dom`      | 10.4.1  | Required peer of testing-library/react |
+| `@testing-library/jest-dom` | 6.9.1   | DOM matchers                           |
+| `@types/react`              | 19.2.17 | React types                            |
+| `@types/react-dom`          | 19.2.3  | React DOM types                        |
+| `@types/three`              | 0.185.0 | Three.js types                         |
+| `@types/node`               | 24.13.3 | Node types                             |
+| `eslint`                    | 9.39.4  | Linting                                |
+| `@eslint/js`                | 9.39.4  | ESLint recommended config              |
+| `typescript-eslint`         | 8.63.0  | TS lint rules (flat config)            |
+| `eslint-plugin-react-hooks` | 7.0.0   | React hooks rules                      |
+| `globals`                   | 17.7.0  | Global definitions for flat config     |
+| `prettier`                  | 3.6.2   | Formatting                             |
 
 ## Compatibility verification (why these versions)
 

@@ -12,8 +12,12 @@ interface RobotState {
   jointMeta: JointMeta[];
   /** Current commanded joint values (includes locked joints at their lock value). */
   jointValues: Record<string, number>;
-  /** World position of the rendered TCP link, in the base frame. */
-  tcp: Vec3Tuple;
+  /**
+   * World position of the rendered TCP link, in the base_link (world) frame, in
+   * metres. `null` until the first valid sample is published after model load,
+   * so the UI never shows fake zero telemetry.
+   */
+  tcp: Vec3Tuple | null;
   /** Currently highlighted target key id (visualization only in Gate 1). */
   targetKey: string | null;
 
@@ -30,7 +34,7 @@ export const useRobotStore = create<RobotState>((set) => ({
   profile: DEFAULT_PROFILE,
   jointMeta: [],
   jointValues: {},
-  tcp: [0, 0, 0],
+  tcp: null,
   targetKey: null,
 
   setStatus: (status, error = null) => set({ status, error }),

@@ -29,7 +29,13 @@ export function TelemetryPanel() {
       <div className="readout">
         <div className="readout-label">TCP (base_link, m)</div>
         <div className="readout-value mono">
-          x {fmt(tcp[0])} &nbsp; y {fmt(tcp[1])} &nbsp; z {fmt(tcp[2])}
+          {tcp === null ? (
+            <span className="muted">— awaiting first sample</span>
+          ) : (
+            <>
+              x {fmt(tcp[0])} &nbsp; y {fmt(tcp[1])} &nbsp; z {fmt(tcp[2])}
+            </>
+          )}
         </div>
       </div>
 

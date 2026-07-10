@@ -17,6 +17,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@huggingface/transformers": "4.2.0",
     "@react-three/drei": "10.7.7",
     "@react-three/fiber": "9.6.1",
     "gl-matrix": "3.4.4",

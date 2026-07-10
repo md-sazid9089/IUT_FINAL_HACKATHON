@@ -10,6 +10,7 @@ import { IkPreflightPanel } from './ui/IkPreflightPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
 import { PinPanel } from './ui/PinPanel';
 import { HardwarePanel } from './ui/HardwarePanel';
+import { VoicePanel } from './ui/VoicePanel';
 
 const KEY_CONFIG_URL = '/config/key.config.json';
 
@@ -45,6 +46,7 @@ export function App() {
         <aside className="sidebar left">
           <RuntimePanel />
           <HardwarePanel />
+          <VoicePanel />
           <TelemetryPanel />
           <FkDiagnosticsPanel />
         </aside>

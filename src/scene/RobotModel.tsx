@@ -17,6 +17,31 @@ const URDF_URL = '/robot/6_dof_arm.urdf';
 const TCP_EPS = 1e-6;
 
 /**
+ * Visual-only material pass: enables shadows and gives the URDF meshes a clean,
+ * semi-matte industrial finish. Geometry is never modified, and metalness is
+ * kept low so surfaces read correctly without an environment map.
+ */
+function enhanceRobotMaterials(robot: URDFRobot): void {
+  robot.traverse((obj) => {
+    const mesh = obj as unknown as { isMesh?: boolean; castShadow?: boolean; receiveShadow?: boolean; material?: unknown };
+    if (!mesh.isMesh) return;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    const apply = (m: unknown) => {
+      const mat = m as { metalness?: number; roughness?: number; envMapIntensity?: number; needsUpdate?: boolean };
+      if (mat && typeof mat.metalness === 'number') {
+        mat.metalness = 0.25;
+        mat.roughness = 0.5;
+        mat.envMapIntensity = 0.9;
+        mat.needsUpdate = true;
+      }
+    };
+    if (Array.isArray(mesh.material)) mesh.material.forEach(apply);
+    else apply(mesh.material);
+  });
+}
+
+/**
  * Loads the URDF, then hands the adapter to the RuntimeController. From this
  * point the runtime is the ONLY thing that commands joint values (via
  * adapter.setJointValues). React only ticks the runtime and reads the rendered
@@ -51,6 +76,7 @@ export function RobotModel() {
         setChain(chain);
         setRobot(loaded);
         loaded.updateMatrixWorld(true);
+        enhanceRobotMaterials(loaded);
 
         // Build the runtime around the adapter (the only URDF setter path).
         const profile = useRobotStore.getState().profile;

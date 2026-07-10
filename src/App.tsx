@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { loadKeyConfig, type KeyConfig } from './config/keyConfig';
 import { useRobotStore } from './state/robotStore';
+import { useUiStore } from './state/uiStore';
 import { SceneRoot } from './scene/SceneRoot';
 import { TelemetryPanel } from './ui/TelemetryPanel';
 import { FkDiagnosticsPanel } from './ui/FkDiagnosticsPanel';
@@ -11,12 +12,17 @@ import { IkPreflightPanel } from './ui/IkPreflightPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
 import { PinPanel } from './ui/PinPanel';
 import { HardwarePanel } from './ui/HardwarePanel';
+import { TopBar } from './ui/TopBar';
+import { CameraControls } from './ui/CameraControls';
+import { DemoMode } from './ui/DemoMode';
+import { EventTimeline } from './ui/EventTimeline';
 
 const KEY_CONFIG_URL = '/config/key.config.json';
 
 export function App() {
   const status = useRobotStore((s) => s.status);
   const error = useRobotStore((s) => s.error);
+  const advanced = useUiStore((s) => s.advancedMode);
 
   const [keyConfig, setKeyConfig] = useState<KeyConfig | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
@@ -37,31 +43,47 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>stylus_arm — Digital Twin</h1>
-        <span className="subtitle">Digital twin · unified command/safety/IK/runtime · manual joystick + keyboard</span>
-      </header>
+      <TopBar />
 
-      <div className="app-body">
-        <aside className="sidebar left">
+      <div className="workspace">
+        <aside className="rail rail-left" aria-label="Controls">
+          <div className="rail-head">Controls</div>
           <RuntimePanel />
-          <HardwarePanel />
           <ManualControlPanel />
-          <TelemetryPanel />
-          <FkDiagnosticsPanel />
+          <JointControlPanel />
+          <PinPanel keyConfig={keyConfig} />
         </aside>
 
-        <main className="viewport">
-          <SceneRoot keyConfig={keyConfig} />
-          <StatusOverlay status={status} error={error} configError={configError} />
+        <main className="stage">
+          <div className="viewport">
+            <SceneRoot keyConfig={keyConfig} />
+            <CameraControls />
+            <StatusOverlay status={status} error={error} configError={configError} />
+            <DemoMode />
+          </div>
         </main>
 
-        <aside className="sidebar right">
-          <PinPanel keyConfig={keyConfig} />
-          <JointControlPanel />
-          <IkPreflightPanel keyConfig={keyConfig} />
+        <aside className="rail rail-right" aria-label="Telemetry">
+          <div className="rail-head">Telemetry &amp; Diagnostics</div>
+          <TelemetryPanel />
+          <HardwarePanel />
+          {advanced ? (
+            <>
+              <FkDiagnosticsPanel />
+              <IkPreflightPanel keyConfig={keyConfig} />
+            </>
+          ) : (
+            <p className="rail-hint">
+              Enable <strong>Advanced</strong> in the top bar for FK verification and IK preflight
+              diagnostics.
+            </p>
+          )}
         </aside>
       </div>
+
+      <footer className="dock">
+        <EventTimeline />
+      </footer>
     </div>
   );
 }

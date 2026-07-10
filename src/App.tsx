@@ -3,6 +3,7 @@ import { loadKeyConfig, type KeyConfig } from './config/keyConfig';
 import { useRobotStore } from './state/robotStore';
 import { SceneRoot } from './scene/SceneRoot';
 import { TelemetryPanel } from './ui/TelemetryPanel';
+import { FkDiagnosticsPanel } from './ui/FkDiagnosticsPanel';
 import { JointDebugPanel } from './ui/JointDebugPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
 
@@ -39,6 +40,7 @@ export function App() {
       <div className="app-body">
         <aside className="sidebar left">
           <TelemetryPanel />
+          <FkDiagnosticsPanel />
         </aside>
 
         <main className="viewport">

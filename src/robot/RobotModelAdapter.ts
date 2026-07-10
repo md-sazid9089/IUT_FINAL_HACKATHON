@@ -1,4 +1,4 @@
-import { LoadingManager, Vector3 } from 'three';
+import { LoadingManager, Quaternion, Vector3 } from 'three';
 import URDFLoader from 'urdf-loader';
 import type { URDFRobot } from 'urdf-loader';
 
@@ -35,6 +35,8 @@ export class RobotModelAdapter {
   private readonly baseLink: string;
   private readonly tcpLink: string;
   private readonly scratch = new Vector3();
+  private readonly scratchAxis = new Vector3();
+  private readonly scratchQuat = new Quaternion();
 
   constructor(options: RobotModelAdapterOptions = {}) {
     this.baseLink = options.baseLink ?? DEFAULT_BASE_LINK;
@@ -121,6 +123,35 @@ export class RobotModelAdapter {
     }
     tcp.getWorldPosition(this.scratch);
     return [this.scratch.x, this.scratch.y, this.scratch.z];
+  }
+
+  /**
+   * Reference TCP world orientation from the rendered Three.js scene graph.
+   * Used only to validate the independent FK engine — never inside it.
+   */
+  getTcpWorldQuaternion(): [number, number, number, number] {
+    const robot = this.requireRobot();
+    robot.updateMatrixWorld(true);
+    const tcp = robot.links[this.tcpLink];
+    if (!tcp) {
+      throw new Error(`TCP link "${this.tcpLink}" not found on loaded robot`);
+    }
+    tcp.getWorldQuaternion(this.scratchQuat);
+    return [this.scratchQuat.x, this.scratchQuat.y, this.scratchQuat.z, this.scratchQuat.w];
+  }
+
+  /** Reference tool approach axis (tip local +Z in world) from Three.js. */
+  getTcpWorldToolAxis(): [number, number, number] {
+    const robot = this.requireRobot();
+    robot.updateMatrixWorld(true);
+    const tcp = robot.links[this.tcpLink];
+    if (!tcp) {
+      throw new Error(`TCP link "${this.tcpLink}" not found on loaded robot`);
+    }
+    this.scratchAxis.set(0, 0, 1);
+    tcp.getWorldQuaternion(this.scratchQuat);
+    this.scratchAxis.applyQuaternion(this.scratchQuat).normalize();
+    return [this.scratchAxis.x, this.scratchAxis.y, this.scratchAxis.z];
   }
 
   private adopt(robot: URDFRobot): void {

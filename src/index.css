@@ -160,6 +160,14 @@ body,
   color: var(--muted);
 }
 
+.small {
+  font-size: 0.72rem;
+}
+
+.fail-row {
+  color: var(--warn);
+}
+
 .overlay {
   position: absolute;
   inset: 0;

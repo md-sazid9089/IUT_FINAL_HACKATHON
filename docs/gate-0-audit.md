@@ -67,11 +67,11 @@ START_HERE.md
 
 ### SHA-256 verification (immutable resources)
 
-| File | Computed SHA-256 | Matches `source-hashes.md`? |
-|---|---|---|
-| `resources/6_dof_arm.urdf` | `23e134ff8a0be1e91ddeefdc47185b1b3bbb7bb478082bcd03f8fa49af0677d9` | ✅ Yes |
-| `resources/key.config.json` | `97273daa1859501c24a2c58293a7c9b29995587f50a0f4988920dd4014c3eada` | ✅ Yes |
-| `resources/Hackathon-Problem-Statement-Final-Round.pdf` | `3bac5e25cc3caea4c89a97a6e98222bb55b756a62053a19bc756f5625f0e51cc` | ✅ Yes |
+| File                                                    | Computed SHA-256                                                   | Matches `source-hashes.md`? |
+| ------------------------------------------------------- | ------------------------------------------------------------------ | --------------------------- |
+| `resources/6_dof_arm.urdf`                              | `23e134ff8a0be1e91ddeefdc47185b1b3bbb7bb478082bcd03f8fa49af0677d9` | ✅ Yes                      |
+| `resources/key.config.json`                             | `97273daa1859501c24a2c58293a7c9b29995587f50a0f4988920dd4014c3eada` | ✅ Yes                      |
+| `resources/Hackathon-Problem-Statement-Final-Round.pdf` | `3bac5e25cc3caea4c89a97a6e98222bb55b756a62053a19bc756f5625f0e51cc` | ✅ Yes                      |
 
 All three match the recorded hashes; no drift detected.
 
@@ -89,23 +89,23 @@ No automated tests this gate (audit only). Verification performed:
 
 ### `key.config.json` validation
 
-| Field | Value | Assessment |
-|---|---|---|
-| `frame` | `base_link` | ✅ Matches URDF base link |
-| `units` | `meters` | ✅ Consistent with URDF |
-| `approach_axis` | `-z` | ✅ Downward approach; valid for top-down key press |
-| `keys` | 6 entries `"1"`…`"6"`, each `{x,y,z}` | ✅ Complete, well-formed |
+| Field           | Value                                 | Assessment                                         |
+| --------------- | ------------------------------------- | -------------------------------------------------- |
+| `frame`         | `base_link`                           | ✅ Matches URDF base link                          |
+| `units`         | `meters`                              | ✅ Consistent with URDF                            |
+| `approach_axis` | `-z`                                  | ✅ Downward approach; valid for top-down key press |
+| `keys`          | 6 entries `"1"`…`"6"`, each `{x,y,z}` | ✅ Complete, well-formed                           |
 
 Coordinates (metres, `base_link`):
 
-| Key | X | Y | Z |
-|---|---:|---:|---:|
-| 1 | 0.500 | 0.050 | 0.050 |
-| 2 | 0.550 | 0.050 | 0.050 |
-| 3 | 0.600 | 0.050 | 0.050 |
-| 4 | 0.500 | −0.050 | 0.050 |
-| 5 | 0.550 | −0.050 | 0.050 |
-| 6 | 0.600 | −0.050 | 0.050 |
+| Key |     X |      Y |     Z |
+| --- | ----: | -----: | ----: |
+| 1   | 0.500 |  0.050 | 0.050 |
+| 2   | 0.550 |  0.050 | 0.050 |
+| 3   | 0.600 |  0.050 | 0.050 |
+| 4   | 0.500 | −0.050 | 0.050 |
+| 5   | 0.550 | −0.050 | 0.050 |
+| 6   | 0.600 | −0.050 | 0.050 |
 
 Layout in millimetres — a 2×3 planar grid on the plane z = 50 mm:
 
@@ -122,17 +122,17 @@ All targets lie at horizontal radius ≈ 0.50–0.60 m and z = 50 mm. All six ke
 
 ## Acceptance criteria
 
-| Criterion | Result | Evidence |
-|---|---|---|
-| Repository tree printed | ✅ Pass | "Repository tree" section above |
-| Immutable resources verified via SHA-256 | ✅ Pass | Hash table; all match `source-hashes.md` |
-| Complete URDF inspection (links, joints, chain, origins, RPY, axes, limits, velocity, base, TCP, 6-vs-7) | ✅ Pass | `docs/urdf-analysis.md` §1–§5 |
-| `key.config.json` validated (schema, frame, units, approach axis, coords, mm layout) | ✅ Pass | Validation tables above |
-| Ambiguities/contradictions/blockers identified | ✅ Pass | "Risks and blockers" below |
-| Document-prompt isolation policy confirmed | ✅ Pass | "Document isolation" below |
-| Stable dependencies proposed (not installed) | ✅ Pass | "Proposed dependencies" below |
-| Gate 1 file plan, tests, acceptance proposed | ✅ Pass | "Proposed next gate" below |
-| Only allowed files created; nothing implemented | ✅ Pass | Two docs created; no code/scaffold |
+| Criterion                                                                                                | Result  | Evidence                                 |
+| -------------------------------------------------------------------------------------------------------- | ------- | ---------------------------------------- |
+| Repository tree printed                                                                                  | ✅ Pass | "Repository tree" section above          |
+| Immutable resources verified via SHA-256                                                                 | ✅ Pass | Hash table; all match `source-hashes.md` |
+| Complete URDF inspection (links, joints, chain, origins, RPY, axes, limits, velocity, base, TCP, 6-vs-7) | ✅ Pass | `docs/urdf-analysis.md` §1–§5            |
+| `key.config.json` validated (schema, frame, units, approach axis, coords, mm layout)                     | ✅ Pass | Validation tables above                  |
+| Ambiguities/contradictions/blockers identified                                                           | ✅ Pass | "Risks and blockers" below               |
+| Document-prompt isolation policy confirmed                                                               | ✅ Pass | "Document isolation" below               |
+| Stable dependencies proposed (not installed)                                                             | ✅ Pass | "Proposed dependencies" below            |
+| Gate 1 file plan, tests, acceptance proposed                                                             | ✅ Pass | "Proposed next gate" below               |
+| Only allowed files created; nothing implemented                                                          | ✅ Pass | Two docs created; no code/scaffold       |
 
 ## Document isolation
 
@@ -142,22 +142,22 @@ Confirmed and unchanged. The official PDF contains a block written to AI assista
 
 The versions below are **non-binding candidates only**. Gate 1 must determine and pin a currently supported, mutually compatible set by checking package and peer dependencies for React, React Three Fiber, Three.js, `urdf-loader`, Vite, TypeScript, and the testing tools. Gate 1 must document the exact installed versions in `docs/dependencies.md` and commit the npm lock file. Indicative stable majors:
 
-| Package | Indicative version | Purpose |
-|---|---|---|
-| `react`, `react-dom` | 18.x | UI |
-| `typescript` | 5.x (strict) | Types |
-| `vite` | 5.x | Build/dev |
-| `three` | 0.16x | 3D engine |
-| `@react-three/fiber` | 8.x (React 18-compatible) | React renderer for three |
-| `@react-three/drei` | 9.x | Scene helpers |
-| `urdf-loader` | latest stable | URDF loading |
-| `zustand` | 4.x | State |
-| `zod` | 3.x | Runtime validation |
-| `gl-matrix` | 3.x | Spatial math (Float64Array) |
-| `tailwindcss` + `postcss` + `autoprefixer` | 3.x | Styling |
-| `vitest` + `@testing-library/react` + `jsdom` | current stable | Unit/UI tests |
-| `@playwright/test` | current stable | E2E |
-| `eslint` + `prettier` (+ TS plugins) | current stable | Lint/format |
+| Package                                       | Indicative version        | Purpose                     |
+| --------------------------------------------- | ------------------------- | --------------------------- |
+| `react`, `react-dom`                          | 18.x                      | UI                          |
+| `typescript`                                  | 5.x (strict)              | Types                       |
+| `vite`                                        | 5.x                       | Build/dev                   |
+| `three`                                       | 0.16x                     | 3D engine                   |
+| `@react-three/fiber`                          | 8.x (React 18-compatible) | React renderer for three    |
+| `@react-three/drei`                           | 9.x                       | Scene helpers               |
+| `urdf-loader`                                 | latest stable             | URDF loading                |
+| `zustand`                                     | 4.x                       | State                       |
+| `zod`                                         | 3.x                       | Runtime validation          |
+| `gl-matrix`                                   | 3.x                       | Spatial math (Float64Array) |
+| `tailwindcss` + `postcss` + `autoprefixer`    | 3.x                       | Styling                     |
+| `vitest` + `@testing-library/react` + `jsdom` | current stable            | Unit/UI tests               |
+| `@playwright/test`                            | current stable            | E2E                         |
+| `eslint` + `prettier` (+ TS plugins)          | current stable            | Lint/format                 |
 
 Version-pairing note: React and `@react-three/fiber` majors must match (React 18 ↔ R3F 8). No floating CDN imports; commit the lock file. These majors are candidates only — Gate 1 verifies peer-dependency compatibility before pinning.
 
@@ -171,10 +171,10 @@ Version-pairing note: React and `@react-three/fiber` majors must match (React 18
 
 Ambiguities / contradictions (all currently non-blocking; carried with default assumptions):
 
-1. **6-vs-7 joints** — URDF has 7 revolute joints; requirement says 6-DOF. Resolved by two profiles (ADR-003). *Non-blocking.*
-2. **Stylus length comment (0.126) vs. actual TCP offset (0.137)** — the authoritative TCP offset is the `stylus_tip_frame` fixed-joint origin = `(0, 0, 0.137) m`. The `0.126 m` value in the URDF comment is descriptive only and must not override the actual joint definition. *Non-blocking.*
-3. **PIN character domain** — panel exposes keys 1–6 only; PDF says "six-digit PIN". Default: exactly 6 chars from `{1..6}`, reject others with explanation. *Non-blocking; confirm against PDF text in a later gate.*
-4. **`stylus_pitch` provisional lock value** — set to 0 rad by default; must be validated by FK/reach check in Gate 2/3 before acceptance. *Non-blocking.*
+1. **6-vs-7 joints** — URDF has 7 revolute joints; requirement says 6-DOF. Resolved by two profiles (ADR-003). _Non-blocking._
+2. **Stylus length comment (0.126) vs. actual TCP offset (0.137)** — the authoritative TCP offset is the `stylus_tip_frame` fixed-joint origin = `(0, 0, 0.137) m`. The `0.126 m` value in the URDF comment is descriptive only and must not override the actual joint definition. _Non-blocking._
+3. **PIN character domain** — panel exposes keys 1–6 only; PDF says "six-digit PIN". Default: exactly 6 chars from `{1..6}`, reject others with explanation. _Non-blocking; confirm against PDF text in a later gate._
+4. **`stylus_pitch` provisional lock value** — set to 0 rad by default; must be validated by FK/reach check in Gate 2/3 before acceptance. _Non-blocking._
 
 No genuinely blocking questions. Proceeding to Gate 1 is safe under the recorded assumptions.
 

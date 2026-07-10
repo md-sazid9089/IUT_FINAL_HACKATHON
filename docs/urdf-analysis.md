@@ -10,32 +10,32 @@
 
 ## 1. Links (9 total)
 
-| # | Link | Role | Notes |
-|---|---|---|---|
-| 1 | `base_link` | Base / world-fixed root | Cylinder body, radius 0.100, has inertial |
-| 2 | `link_1` | Base-yaw upper arm segment | L ≈ 0.250 |
-| 3 | `link_2` | Shoulder segment | L ≈ 0.250 |
-| 4 | `link_3` | Elbow segment | L ≈ 0.250 |
-| 5 | `link_4` | Forearm-roll segment (short) | L ≈ 0.150 |
-| 6 | `link_5` | Wrist-pitch segment | L ≈ 0.250 |
-| 7 | `link_6` | Tool-roll segment (short) | L ≈ 0.150 |
-| 8 | `stylus` | Stylus body (pitch hub + barrel + nib) | Nib sphere at z ≈ 0.132 |
-| 9 | `stylus_tip` | **TCP frame** (empty link) | No geometry; pure frame |
+| #   | Link         | Role                                   | Notes                                     |
+| --- | ------------ | -------------------------------------- | ----------------------------------------- |
+| 1   | `base_link`  | Base / world-fixed root                | Cylinder body, radius 0.100, has inertial |
+| 2   | `link_1`     | Base-yaw upper arm segment             | L ≈ 0.250                                 |
+| 3   | `link_2`     | Shoulder segment                       | L ≈ 0.250                                 |
+| 4   | `link_3`     | Elbow segment                          | L ≈ 0.250                                 |
+| 5   | `link_4`     | Forearm-roll segment (short)           | L ≈ 0.150                                 |
+| 6   | `link_5`     | Wrist-pitch segment                    | L ≈ 0.250                                 |
+| 7   | `link_6`     | Tool-roll segment (short)              | L ≈ 0.150                                 |
+| 8   | `stylus`     | Stylus body (pitch hub + barrel + nib) | Nib sphere at z ≈ 0.132                   |
+| 9   | `stylus_tip` | **TCP frame** (empty link)             | No geometry; pure frame                   |
 
 ---
 
 ## 2. Joints (8 total: 7 revolute + 1 fixed)
 
-| Joint | Type | Parent → Child | Origin xyz | Origin rpy | Axis | Lower (rad) | Upper (rad) | Effort (N·m) | Velocity (rad/s) | Damping | Friction |
-|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|
-| `joint_1` | revolute | `base_link` → `link_1` | `0 0 0.060` | `0 0 0` | `0 0 1` (Z) | −3.1416 | 3.1416 | 60.0 | 2.5 | 0.8 | 0.4 |
-| `joint_2` | revolute | `link_1` → `link_2` | `0 0 0.250` | `0 0 0` | `0 1 0` (Y) | −2.0944 | 2.0944 | 60.0 | 2.5 | 0.8 | 0.4 |
-| `joint_3` | revolute | `link_2` → `link_3` | `0 0 0.250` | `0 0 0` | `0 1 0` (Y) | −2.6180 | 2.6180 | 40.0 | 3.0 | 0.6 | 0.3 |
-| `joint_4` | revolute | `link_3` → `link_4` | `0 0 0.250` | `0 0 0` | `0 0 1` (Z) | −3.1416 | 3.1416 | 25.0 | 3.5 | 0.4 | 0.2 |
-| `joint_5` | revolute | `link_4` → `link_5` | `0 0 0.150` | `0 0 0` | `0 1 0` (Y) | −2.0944 | 2.0944 | 15.0 | 4.0 | 0.3 | 0.15 |
-| `joint_6` | revolute | `link_5` → `link_6` | `0 0 0.250` | `0 0 0` | `0 0 1` (Z) | −3.1416 | 3.1416 | 10.0 | 4.5 | 0.2 | 0.1 |
-| `stylus_pitch` | revolute | `link_6` → `stylus` | `0 0 0.150` | `0 0 0` | `0 1 0` (Y) | −2.0944 | 2.0944 | 8.0 | 5.0 | 0.15 | 0.08 |
-| `stylus_tip_frame` | **fixed** | `stylus` → `stylus_tip` | `0 0 0.137` | `0 0 0` | — | — | — | — | — | — | — |
+| Joint              | Type      | Parent → Child          | Origin xyz  | Origin rpy | Axis        | Lower (rad) | Upper (rad) | Effort (N·m) | Velocity (rad/s) | Damping | Friction |
+| ------------------ | --------- | ----------------------- | ----------- | ---------- | ----------- | ----------: | ----------: | -----------: | ---------------: | ------: | -------: |
+| `joint_1`          | revolute  | `base_link` → `link_1`  | `0 0 0.060` | `0 0 0`    | `0 0 1` (Z) |     −3.1416 |      3.1416 |         60.0 |              2.5 |     0.8 |      0.4 |
+| `joint_2`          | revolute  | `link_1` → `link_2`     | `0 0 0.250` | `0 0 0`    | `0 1 0` (Y) |     −2.0944 |      2.0944 |         60.0 |              2.5 |     0.8 |      0.4 |
+| `joint_3`          | revolute  | `link_2` → `link_3`     | `0 0 0.250` | `0 0 0`    | `0 1 0` (Y) |     −2.6180 |      2.6180 |         40.0 |              3.0 |     0.6 |      0.3 |
+| `joint_4`          | revolute  | `link_3` → `link_4`     | `0 0 0.250` | `0 0 0`    | `0 0 1` (Z) |     −3.1416 |      3.1416 |         25.0 |              3.5 |     0.4 |      0.2 |
+| `joint_5`          | revolute  | `link_4` → `link_5`     | `0 0 0.150` | `0 0 0`    | `0 1 0` (Y) |     −2.0944 |      2.0944 |         15.0 |              4.0 |     0.3 |     0.15 |
+| `joint_6`          | revolute  | `link_5` → `link_6`     | `0 0 0.250` | `0 0 0`    | `0 0 1` (Z) |     −3.1416 |      3.1416 |         10.0 |              4.5 |     0.2 |      0.1 |
+| `stylus_pitch`     | revolute  | `link_6` → `stylus`     | `0 0 0.150` | `0 0 0`    | `0 1 0` (Y) |     −2.0944 |      2.0944 |          8.0 |              5.0 |    0.15 |     0.08 |
+| `stylus_tip_frame` | **fixed** | `stylus` → `stylus_tip` | `0 0 0.137` | `0 0 0`    | —           |           — |           — |            — |                — |       — |        — |
 
 ---
 
@@ -86,14 +86,14 @@ Zero-pose TCP ≈ `(0, 0, 1.497)` in `base_link`. Approximate maximum vertical r
 
 - The written requirement and file name describe a **6-DOF** arm with a fixed stylus.
 - The URDF actually declares **7 revolute joints**: `joint_1`…`joint_6` **plus** `stylus_pitch`.
-- The header comment confirms the intent: *"6-DOF serial arm + 1-DOF stylus pitch (7 actuated joints total)"* and notes the stylus *"is no longer fixed"* versus v1.
+- The header comment confirms the intent: _"6-DOF serial arm + 1-DOF stylus pitch (7 actuated joints total)"_ and notes the stylus _"is no longer fixed"_ versus v1.
 
 **Resolution (per architecture ADR-003):** two configuration-driven profiles.
 
-| Profile | Active joints | `stylus_pitch` | Purpose |
-|---|---|---|---|
-| `competition_6dof` (default) | `joint_1`…`joint_6` | **Locked** (provisional 0 rad; remains a revolute joint, just constrained) | Strict alignment with the 6-DOF written requirement |
-| `model_7dof` (optional/diagnostic) | `joint_1`…`joint_6` + `stylus_pitch` | Active ("Tool Pitch") | Demonstrate configuration-driven architecture |
+| Profile                            | Active joints                        | `stylus_pitch`                                                             | Purpose                                             |
+| ---------------------------------- | ------------------------------------ | -------------------------------------------------------------------------- | --------------------------------------------------- |
+| `competition_6dof` (default)       | `joint_1`…`joint_6`                  | **Locked** (provisional 0 rad; remains a revolute joint, just constrained) | Strict alignment with the 6-DOF written requirement |
+| `model_7dof` (optional/diagnostic) | `joint_1`…`joint_6` + `stylus_pitch` | Active ("Tool Pitch")                                                      | Demonstrate configuration-driven architecture       |
 
 Per repository instruction, `stylus_pitch` **remains a `revolute` joint in both profiles** — in `competition_6dof` it is revolute but locked by configuration; in `model_7dof` it is revolute and active. The lock is a control-layer constraint only; the URDF joint type is never changed.
 

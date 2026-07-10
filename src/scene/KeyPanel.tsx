@@ -1,5 +1,6 @@
 import { Line, Text } from '@react-three/drei';
 import type { KeyConfig } from '../config/keyConfig';
+import { usePinStore } from '../pin/pinStore';
 import { approachUnitVector, coordToTuple, keyButtonCenter, type Vec3Tuple } from './coordinates';
 
 const BUTTON_SIZE = 0.04; // 40 mm square keycap
@@ -17,12 +18,14 @@ interface KeyPanelProps {
  */
 export function KeyPanel({ config }: KeyPanelProps) {
   const a = approachUnitVector(config.approach_axis);
+  const activeKey = usePinStore((s) => s.activeKey);
 
   return (
     <group name="key-panel">
       {Object.entries(config.keys).map(([id, coord]) => {
         const contact = coordToTuple(coord);
         const center = keyButtonCenter(coord, config.approach_axis, BUTTON_HEIGHT);
+        const active = activeKey === id;
         // Indicator starts "above" the key (opposite the approach direction).
         const indicatorStart: Vec3Tuple = [
           contact[0] - a[0] * APPROACH_INDICATOR_LENGTH,
@@ -34,8 +37,20 @@ export function KeyPanel({ config }: KeyPanelProps) {
             {/* Keycap body (top face on the contact point) */}
             <mesh position={center} castShadow receiveShadow>
               <boxGeometry args={[BUTTON_SIZE, BUTTON_SIZE, BUTTON_HEIGHT]} />
-              <meshStandardMaterial color="#3b4252" metalness={0.1} roughness={0.7} />
+              <meshStandardMaterial
+                color={active ? '#1d4ed8' : '#30343d'}
+                emissive={active ? '#0e7490' : '#000000'}
+                emissiveIntensity={active ? 0.45 : 0}
+                metalness={0.12}
+                roughness={0.62}
+              />
             </mesh>
+            {active ? (
+              <mesh position={[contact[0], contact[1], contact[2] + 0.002]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[0.029, 0.0025, 12, 48]} />
+                <meshBasicMaterial color="#67e8f9" />
+              </mesh>
+            ) : null}
             {/* Contact point marker */}
             <mesh position={contact}>
               <sphereGeometry args={[0.004, 16, 16]} />

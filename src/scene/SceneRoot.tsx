@@ -6,7 +6,7 @@ import { useRobotStore } from '../state/robotStore';
 import { coordToTuple, type Vec3Tuple } from './coordinates';
 import { RobotModel } from './RobotModel';
 import { KeyPanel } from './KeyPanel';
-import { TcpMarker, TargetMarker } from './Markers';
+import { PinPathOverlay, TcpMarker, TargetMarker } from './Markers';
 
 interface SceneRootProps {
   keyConfig: KeyConfig | null;
@@ -71,6 +71,7 @@ export function SceneRoot({ keyConfig }: SceneRootProps) {
       {keyConfig ? <KeyPanel config={keyConfig} /> : null}
       {tcp ? <TcpMarker position={tcp} /> : null}
       {targetPosition ? <TargetMarker position={targetPosition} /> : null}
+      <PinPathOverlay />
 
       <OrbitControls makeDefault target={[0.55, 0, 0.2]} />
     </Canvas>

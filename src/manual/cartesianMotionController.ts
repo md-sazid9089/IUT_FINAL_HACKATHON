@@ -6,21 +6,14 @@ import {
 } from './jogModel';
 
 /**
- * 3D Cartesian teleoperation controller (industrial teach-pendant style).
+ * Centralised Cartesian motion controller (industrial teach-pendant style).
  *
- * This is the single translation point between raw joystick hardware values and
- * Cartesian TCP targets. It never touches joints: its output is a relative TCP
- * delta / absolute target pose that the ManualJogEngine submits as a validated
- * `cartesian_jog` command. The existing DLS IK worker then decides how every
- * joint moves, and the RuntimeController enforces all safety rules.
- *
- * Sticks:
- *  - Position stick (stick 1): x → TCP ±X, y → TCP ±Y.
- *  - Orientation stick (stick 2): y → TCP ±Z, x → tool rotation (Phase 1:
- *    displayed and carried in the target's orientation field, not yet driven —
- *    the command schema is position + approach axis; roll/pitch/yaw are wired
- *    through `CartesianTarget` so orientation control can be enabled without
- *    another refactor).
+ * EVERY manual input — the three axis joysticks (X, Y, Z), the legacy 2D
+ * sticks, the ±Z buttons, and the keyboard (via keysToDirection feeding the
+ * same jog model) — normalises into the SAME relative TCP step here. The
+ * output is a `cartesian_jog` command; the existing DLS IK solver decides how
+ * all six joints move and the RuntimeController enforces every safety rule.
+ * No input path ever writes a joint angle.
  */
 
 export interface JoystickInput {
@@ -44,13 +37,35 @@ export interface CartesianStep {
   readonly delta: Vec3;
   /** Absolute target pose = current TCP + delta (orientation carried through). */
   readonly target: CartesianTarget;
-  /** True when the sticks are inside the dead zone (nothing to emit). */
+  /** True when all inputs are inside the dead zone (nothing to emit). */
   readonly idle: boolean;
 }
 
-export class CartesianJoystickController {
-  private stick1: [number, number] = [0, 0]; // [x → ±X, y → ±Y]
-  private stick2: [number, number] = [0, 0]; // [x → rotation, y → ±Z]
+export type CartesianAxis = 'x' | 'y' | 'z';
+
+/**
+ * Preferred manual posture (radians): a natural bent-elbow pose. Used as the
+ * IK null-space attractor during manual teleoperation so the solver avoids
+ * fully stretched, near-singular arm configurations. The warm-start seed (the
+ * CURRENT joints, passed by the RuntimeController) remains the primary
+ * continuity mechanism; this only biases the redundancy.
+ */
+export const PREFERRED_MANUAL_POSTURE: Readonly<Record<string, number>> = {
+  joint_1: 0,
+  joint_2: -Math.PI / 4, // -45°
+  joint_3: Math.PI / 2, // +90° — bent elbow, never stretched
+  joint_4: 0,
+  joint_5: Math.PI / 4, // +45°
+  joint_6: 0,
+};
+
+export class CartesianMotionController {
+  /** Per-axis virtual joysticks (X, Y, Z), each ∈ [-1, 1]. */
+  private readonly axes: Record<CartesianAxis, number> = { x: 0, y: 0, z: 0 };
+  /** Legacy 2D position stick (x → ±X, y → ±Y). */
+  private stick1: [number, number] = [0, 0];
+  /** Legacy orientation stick (x → rotation, y → ±Z). */
+  private stick2: [number, number] = [0, 0];
   private zButton = 0; // discrete ±Z (keyboard R/F, hold buttons)
   private readonly deadZone: number;
 
@@ -59,6 +74,15 @@ export class CartesianJoystickController {
   }
 
   // ---- input ----------------------------------------------------------------
+
+  /** Single-axis virtual joystick: value ∈ [-1, 1] jogs TCP along that axis. */
+  setAxis(axis: CartesianAxis, value: number): void {
+    this.axes[axis] = clamp1(value);
+  }
+
+  clearAxis(axis: CartesianAxis): void {
+    this.axes[axis] = 0;
+  }
 
   /** Position stick: x ∈ [-1,1] → TCP ±X, y ∈ [-1,1] → TCP ±Y. */
   setPositionStick(x: number, y: number): void {
@@ -88,6 +112,9 @@ export class CartesianJoystickController {
   }
 
   clearAll(): void {
+    this.axes.x = 0;
+    this.axes.y = 0;
+    this.axes.z = 0;
     this.stick1 = [0, 0];
     this.stick2 = [0, 0];
     this.zButton = 0;
@@ -98,12 +125,12 @@ export class CartesianJoystickController {
   /** Combined raw 6-axis input (pre-normalisation). */
   input(): JoystickInput {
     return {
-      x: this.stick1[0],
-      y: this.stick1[1],
-      z: this.zButton !== 0 ? this.zButton : this.stick2[1],
+      x: clamp1(this.stick1[0] + this.axes.x),
+      y: clamp1(this.stick1[1] + this.axes.y),
+      z: this.zButton !== 0 ? this.zButton : clamp1(this.stick2[1] + this.axes.z),
       roll: 0,
       pitch: 0,
-      yaw: this.stick2[0], // Phase 1: tool rotation maps to yaw about the tool axis
+      yaw: this.stick2[0], // tool rotation maps to yaw about the tool axis
     };
   }
 
@@ -124,7 +151,7 @@ export class CartesianJoystickController {
    * Build the Cartesian step for one tick: dead-zone filter, clamp the 3D
    * translation to unit length (a full diagonal is never faster than a single
    * axis: [1,1] → [0.707, 0.707]), scale by `speed` (m per tick), and add to
-   * the current TCP pose.
+   * the CURRENT TCP pose — never a fixed coordinate, never home.
    */
   buildStep(currentTcp: Vec3, speed: number): CartesianStep {
     const i = this.input();

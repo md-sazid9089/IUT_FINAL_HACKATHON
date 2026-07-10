@@ -1,5 +1,6 @@
 import { useRuntimeStore } from '../state/runtimeStore';
 import { getRuntime } from '../runtime/runtimeInstance';
+import { isManualSource } from '../runtime/commands';
 import { StatusChip, toneForState } from './StatusChip';
 
 const LIVE = new Set(['EXECUTING', 'PLANNING', 'STOPPING']);
@@ -23,7 +24,13 @@ export function RuntimePanel() {
       </div>
 
       <div className="runtime-state-row">
-        <StatusChip label={state} tone={toneForState(state)} pulse={LIVE.has(state)} />
+        {snapshot?.activeCommand?.type === 'cartesian_jog' &&
+        isManualSource(snapshot.activeCommand.source) &&
+        (state === 'PLANNING' || state === 'EXECUTING') ? (
+          <StatusChip label="JOGGING" tone="active" pulse />
+        ) : (
+          <StatusChip label={state} tone={toneForState(state)} pulse={LIVE.has(state)} />
+        )}
         <span className="runtime-active mono">
           {snapshot?.activeCommand
             ? `${snapshot.activeCommand.type} · ${snapshot.activeCommand.source}`

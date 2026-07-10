@@ -3,9 +3,26 @@ import { useRuntimeStore } from '../state/runtimeStore';
 import { useRobotStore } from '../state/robotStore';
 import { useHardwareStore } from '../hardware/hardwareStore';
 import { useUiStore } from '../state/uiStore';
+import { isManualSource } from '../runtime/commands';
 import { StatusChip, toneForState } from './StatusChip';
 
 const LIVE_STATES = new Set(['EXECUTING', 'PLANNING', 'STOPPING']);
+
+/** Continuous manual jog alternates PLANNING↔EXECUTING many times a second;
+ * present it as one steady "JOGGING" chip instead of a flickering readout. */
+function displayState(
+  state: string,
+  active: { type: string; source: string } | null,
+): { label: string; tone: ReturnType<typeof toneForState> } {
+  if (
+    active?.type === 'cartesian_jog' &&
+    isManualSource(active.source as never) &&
+    (state === 'PLANNING' || state === 'EXECUTING')
+  ) {
+    return { label: 'JOGGING', tone: 'active' };
+  }
+  return { label: state, tone: toneForState(state as never) };
+}
 
 /**
  * Persistent mission-control top bar: identity, connection, runtime state,
@@ -60,7 +77,11 @@ export function TopBar() {
         </div>
         <div className="metric">
           <span className="metric-label">Runtime</span>
-          <StatusChip label={state} tone={toneForState(state)} pulse={LIVE_STATES.has(state)} />
+          <StatusChip
+            label={displayState(state, snapshot?.activeCommand ?? null).label}
+            tone={displayState(state, snapshot?.activeCommand ?? null).tone}
+            pulse={LIVE_STATES.has(state)}
+          />
         </div>
         <div className="metric">
           <span className="metric-label">Safety</span>

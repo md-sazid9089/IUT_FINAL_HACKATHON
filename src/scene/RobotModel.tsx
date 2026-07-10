@@ -12,6 +12,7 @@ import { comparePoses } from '../kinematics/metrics';
 import { RuntimeController, type Vec3 } from '../runtime/RuntimeController';
 import { setRuntime } from '../runtime/runtimeInstance';
 import { IkWorkerClient } from '../kinematics/ikWorkerClient';
+import { PREFERRED_MANUAL_POSTURE } from '../manual/cartesianMotionController';
 
 const URDF_URL = '/robot/6_dof_arm.urdf';
 const TCP_EPS = 1e-6;
@@ -90,20 +91,51 @@ export function RobotModel() {
         const initialJoints: Record<string, number> = {};
         for (const m of meta) initialJoints[m.name] = profile.lockedJoints[m.name] ?? 0;
 
-        // Cartesian planning via the Gate 3 IK worker (lazy init).
+        // Cartesian planning via the Gate 3 IK worker (lazy init). The runtime
+        // passes the CURRENT joints as the warm-start seed so successive jog
+        // steps stay on the same IK branch (continuous, natural motion). The
+        // preferred manual posture biases the null space toward a bent-elbow
+        // pose instead of a stretched, near-singular arm.
+        //
+        // Two-stage solve: a FAST pass (warm-start seed, few iterations) covers
+        // virtually every continuous jog step; if it fails, ONE thorough pass
+        // (full seed set + iteration budget) runs before reporting failure —
+        // so reachable targets never surface as "diverged" just because the
+        // fast path gave up early.
         let ikClient: IkWorkerClient | null = null;
         let ikReady: Promise<void> | null = null;
-        const ikSolve = async (position: Vec3, approachAxis: Vec3) => {
+        const ikSolve = async (position: Vec3, approachAxis: Vec3, seed?: Readonly<Record<string, number>>) => {
           if (!ikClient) {
             ikClient = new IkWorkerClient();
             ikReady = ikClient.init(chain);
           }
           await ikReady;
-          return ikClient.solveIk({
+          const base = {
             target: { position, approachAxis },
             activeJoints: profile.activeJoints,
             lockedValues: profile.lockedJoints,
+            ...(seed ? { seed } : {}),
+          };
+          const shared = {
+            postureReference: PREFERRED_MANUAL_POSTURE,
+            // Boundary sliding: a tangent step at full reach lands a fraction
+            // of a millimetre outside the workspace sphere. The strict 0.1 mm
+            // tolerance would reject it and the arm would appear "stuck".
+            // 1.5 mm accepts the nearest reachable point so the TCP glides
+            // along the boundary; interior jogs still converge far tighter.
+            positionTolerance: 1.5e-3,
+            // Jogs pass the CURRENT tool axis (tilt starts near 0°); a relaxed
+            // early-exit tilt lets warm-started solves finish in a few
+            // iterations. maxTiltRad still hard-gates acceptance.
+            preferredTiltRad: (10 * Math.PI) / 180,
+          };
+          const fast = await ikClient.solveIk({
+            ...base,
+            options: { ...shared, maxIterations: 120, seedCandidates: 2 },
           });
+          if (fast.verified) return fast;
+          // Thorough fallback: full seed set + full iteration budget.
+          return ikClient.solveIk({ ...base, options: { ...shared } });
         };
 
         const controller = new RuntimeController({
@@ -118,7 +150,9 @@ export function RobotModel() {
           // Short min-duration keeps manual jogs responsive; successive
           // preempting steps chain into smooth continuous motion. Velocity
           // limits are still enforced post-plan by validateTrajectory.
-          minDurationMs: 110,
+          minDurationMs: 60,
+          // A hung IK worker must never wedge the runtime in PLANNING.
+          planningTimeoutMs: 2000,
         });
         runtimeRef.current = controller;
         setRuntime(controller);

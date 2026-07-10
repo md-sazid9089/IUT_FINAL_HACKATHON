@@ -6,6 +6,9 @@ export interface JoystickPadProps {
   readonly onVector: (x: number, y: number) => void;
   /** Called when the stick is released or capture is lost — motion must stop. */
   readonly onRelease: () => void;
+  /** Constrain movement to one axis ('x' horizontal, 'y' vertical). */
+  readonly axis?: 'both' | 'x' | 'y';
+  readonly ariaLabel?: string;
   readonly deadZone?: number;
   readonly disabled?: boolean;
   readonly size?: number;
@@ -22,6 +25,8 @@ export interface JoystickPadProps {
 export function JoystickPad({
   onVector,
   onRelease,
+  axis = 'both',
+  ariaLabel,
   deadZone = DEFAULT_DEAD_ZONE,
   disabled = false,
   size = 140,
@@ -48,6 +53,9 @@ export function JoystickPad({
       let nx = (clientX - cx) / radius;
       // Screen Y grows downward; invert so pushing up gives +Y.
       let ny = -(clientY - cy) / radius;
+      // Single-axis pads ignore the perpendicular component entirely.
+      if (axis === 'x') ny = 0;
+      if (axis === 'y') nx = 0;
       const mag = Math.hypot(nx, ny);
       if (mag > 1) {
         nx /= mag;
@@ -61,7 +69,7 @@ export function JoystickPad({
         onVector(nx, ny);
       }
     },
-    [deadZone, onVector, radius],
+    [axis, deadZone, onVector, radius],
   );
 
   const handlePointerDown = useCallback(
@@ -107,11 +115,13 @@ export function JoystickPad({
       };
       const v = map[e.key];
       if (!v) return;
+      if (axis === 'x' && v[0] === 0) return;
+      if (axis === 'y' && v[1] === 0) return;
       e.preventDefault();
       setKnob({ x: v[0], y: v[1] });
       onVector(v[0], v[1]);
     },
-    [disabled, onVector],
+    [axis, disabled, onVector],
   );
 
   const handleKeyUp = useCallback(
@@ -144,7 +154,9 @@ export function JoystickPad({
       className={`joystick-pad${disabled ? ' disabled' : ''}`}
       style={{ width: size, height: size }}
       role="application"
-      aria-label="XY Cartesian joystick. Drag to jog the tool: right +X, left −X, up +Y, down −Y."
+      aria-label={
+        ariaLabel ?? 'XY Cartesian joystick. Drag to jog the tool: right +X, left −X, up +Y, down −Y.'
+      }
       aria-disabled={disabled}
       tabIndex={disabled ? -1 : 0}
       onPointerDown={handlePointerDown}
@@ -155,8 +167,8 @@ export function JoystickPad({
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
     >
-      <div className="joystick-cross joystick-cross-h" />
-      <div className="joystick-cross joystick-cross-v" />
+      {axis !== 'y' ? <div className="joystick-cross joystick-cross-h" /> : null}
+      {axis !== 'x' ? <div className="joystick-cross joystick-cross-v" /> : null}
       <div className="joystick-knob" style={knobPx} />
     </div>
   );

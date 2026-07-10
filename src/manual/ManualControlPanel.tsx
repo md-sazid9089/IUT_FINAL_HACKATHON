@@ -38,18 +38,26 @@ export function ManualControlPanel() {
 
   // IK pipeline status for the manual Cartesian jog (planning = worker solving).
   const manualOwns = activeSource !== null && isManualSource(activeSource);
+  const lastRejection = status.lastRejection ?? snapshot?.lastRejection ?? null;
+  const ikUnreachable = lastRejection !== null && lastRejection.includes('IK failed');
   const ikStatus =
     state === 'PLANNING' && manualOwns
       ? 'Solving…'
       : state === 'EXECUTING' && manualOwns
-        ? 'Executing IK solution'
-        : 'Idle';
+        ? 'Success — executing IK solution'
+        : ikUnreachable
+          ? 'Failed — target unreachable (robot holds previous pose)'
+          : 'Idle';
   const jointValues = snapshot?.jointValues ?? {};
+  // Target TCP = current pose + the delta being commanded this step.
+  const target = tcp
+    ? [tcp[0] + status.movementVector[0], tcp[1] + status.movementVector[1], tcp[2] + status.movementVector[2]]
+    : null;
 
   return (
-    <section className="panel" aria-label="3D Cartesian joystick controls">
+    <section className="panel" aria-label="Cartesian robot control">
       <h2>
-        3D Cartesian Joystick <span className="temp-badge">TCP → IK → joints</span>
+        Cartesian Robot Control <span className="temp-badge">TCP → IK → joints</span>
       </h2>
       <p className="muted small">
         You steer the stylus tip in 3D Cartesian space; the DLS IK solver computes all six joint
@@ -61,58 +69,50 @@ export function ManualControlPanel() {
       <div className="manual-grid">
         <div className="manual-joystick">
           <JoystickPad
-            onVector={controls.setPositionStick}
-            onRelease={controls.clearPositionStick}
+            axis="x"
+            ariaLabel="X-axis joystick. Right +X, left −X."
+            onVector={(x) => controls.setAxis('x', x)}
+            onRelease={() => controls.clearAxis('x')}
             disabled={disabled}
-            size={108}
+            size={96}
           />
           <p className="muted small joystick-caption">
-            <strong>1 · Position</strong>
+            <strong>X</strong>
             <br />
-            right +X · left −X · up +Y · down −Y
+            right + · left −
           </p>
         </div>
 
         <div className="manual-joystick">
           <JoystickPad
-            onVector={controls.setOrientationStick}
-            onRelease={controls.clearOrientationStick}
+            axis="y"
+            ariaLabel="Y-axis joystick. Up +Y, down −Y."
+            onVector={(_, y) => controls.setAxis('y', y)}
+            onRelease={() => controls.clearAxis('y')}
             disabled={disabled}
-            size={108}
+            size={96}
           />
           <p className="muted small joystick-caption">
-            <strong>2 · Z / Rotation</strong>
+            <strong>Y</strong>
             <br />
-            up +Z · down −Z · right/left tool rotation
+            up + · down −
           </p>
         </div>
 
-        <div className="manual-zcol" aria-label="Z axis control">
-          <button
-            className="z-btn"
-            aria-label="Jog +Z (up). Press and hold."
+        <div className="manual-joystick">
+          <JoystickPad
+            axis="y"
+            ariaLabel="Z-axis joystick. Up +Z, down −Z."
+            onVector={(_, y) => controls.setAxis('z', y)}
+            onRelease={() => controls.clearAxis('z')}
             disabled={disabled}
-            onPointerDown={() => controls.pressZ(1)}
-            onPointerUp={controls.releaseZ}
-            onPointerLeave={controls.releaseZ}
-            onPointerCancel={controls.releaseZ}
-            onLostPointerCapture={controls.releaseZ}
-          >
-            +Z
-          </button>
-          <span className="z-label mono">Z</span>
-          <button
-            className="z-btn"
-            aria-label="Jog −Z (down). Press and hold."
-            disabled={disabled}
-            onPointerDown={() => controls.pressZ(-1)}
-            onPointerUp={controls.releaseZ}
-            onPointerLeave={controls.releaseZ}
-            onPointerCancel={controls.releaseZ}
-            onLostPointerCapture={controls.releaseZ}
-          >
-            −Z
-          </button>
+            size={96}
+          />
+          <p className="muted small joystick-caption">
+            <strong>Z</strong>
+            <br />
+            up + · down −
+          </p>
         </div>
       </div>
 
@@ -148,14 +148,12 @@ export function ManualControlPanel() {
         </div>
       </div>
       <div className="readout">
-        <div className="readout-label">Rotation input</div>
-        <div className="readout-value mono">
-          {status.rotationInput === 0 ? '—' : `${fmtDelta(status.rotationInput)} (phase 1: display only)`}
-        </div>
-      </div>
-      <div className="readout">
         <div className="readout-label">Current TCP (m)</div>
         <div className="readout-value mono">{tcp ? fmtVec(tcp) : '— awaiting first sample'}</div>
+      </div>
+      <div className="readout">
+        <div className="readout-label">Target TCP (m)</div>
+        <div className="readout-value mono">{target ? fmtVec(target) : '—'}</div>
       </div>
       <div className="readout">
         <div className="readout-label">IK status</div>
@@ -193,9 +191,7 @@ export function ManualControlPanel() {
           {activeSource ? ` · owner=${activeSource}` : ''}
         </div>
       </div>
-      {status.lastRejection ?? snapshot?.lastRejection ? (
-        <p className="fail-row small">Last rejection: {status.lastRejection ?? snapshot?.lastRejection}</p>
-      ) : null}
+      {lastRejection ? <p className="fail-row small">Last rejection: {lastRejection}</p> : null}
 
       <h3>Keyboard</h3>
       <ul className="key-help small mono">

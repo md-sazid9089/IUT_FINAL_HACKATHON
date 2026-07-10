@@ -270,14 +270,20 @@ describe('ManualJogEngine — runtime gating', () => {
     expect(h.engine.getStatus().lastRejection).toMatch(/autonomous/);
   });
 
-  it('does not emit while PLANNING or E_STOPPED', () => {
-    const h = harness({ state: 'PLANNING', activeSource: null });
+  it('emits during our own PLANNING (queued for chaining) but never when E_STOPPED or autonomous plans', () => {
+    // Our own manual planning → emission allowed (runtime dedupe-queues it).
+    const h = harness({ state: 'PLANNING', activeSource: 'joystick' });
     h.engine.keyDown('d');
     h.engine.tick();
-    expect(h.jogs()).toHaveLength(0);
+    expect(h.jogs()).toHaveLength(1);
+    // Autonomous-owned planning → blocked.
+    h.setStatus({ state: 'PLANNING', activeSource: 'autonomous' });
+    h.engine.tick();
+    expect(h.jogs()).toHaveLength(1);
+    // E-stopped → blocked.
     h.setStatus({ state: 'E_STOPPED', activeSource: null });
     h.engine.tick();
-    expect(h.jogs()).toHaveLength(0);
+    expect(h.jogs()).toHaveLength(1);
   });
 });
 

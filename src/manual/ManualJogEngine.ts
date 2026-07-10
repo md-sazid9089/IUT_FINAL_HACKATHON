@@ -1,7 +1,7 @@
 import type { CommandSource } from '../runtime/commands';
 import { isManualSource } from '../runtime/commands';
 import type { RuntimeState } from '../runtime/runtimeState';
-import { CartesianJoystickController } from './cartesianJoystickController';
+import { CartesianMotionController, type CartesianAxis } from './cartesianMotionController';
 import {
   buildJogDelta,
   DEFAULT_APPROACH_AXIS,
@@ -65,8 +65,8 @@ export class ManualJogEngine {
   private readonly onStatus?: (status: ManualStatus) => void;
 
   private readonly keys = new Set<string>();
-  /** 3D Cartesian teleoperation input (both sticks + Z buttons). */
-  private readonly cartesian: CartesianJoystickController;
+  /** 3D Cartesian teleoperation input (axis joysticks, sticks, Z buttons). */
+  private readonly cartesian: CartesianMotionController;
   private speedMode: SpeedMode = DEFAULT_SPEED_MODE;
 
   private activeSource: 'keyboard' | 'joystick' | null = null;
@@ -79,7 +79,7 @@ export class ManualJogEngine {
     this.getRuntimeStatus = opts.getRuntimeStatus;
     this.approachAxis = opts.approachAxis ?? (() => DEFAULT_APPROACH_AXIS);
     this.deadZone = opts.deadZone ?? DEFAULT_DEAD_ZONE;
-    this.cartesian = new CartesianJoystickController(this.deadZone);
+    this.cartesian = new CartesianMotionController(this.deadZone);
     this.onStatus = opts.onStatus;
   }
 
@@ -108,6 +108,17 @@ export class ManualJogEngine {
   keyUp(key: string): void {
     const k = key.toLowerCase();
     if (this.keys.delete(k)) this.notify();
+  }
+
+  /** Single-axis virtual joystick (X, Y or Z pad): value ∈ [-1, 1]. */
+  setAxis(axis: CartesianAxis, value: number): void {
+    this.cartesian.setAxis(axis, value);
+    this.notify();
+  }
+
+  clearAxis(axis: CartesianAxis): void {
+    this.cartesian.clearAxis(axis);
+    this.notify();
   }
 
   /** Position stick (stick 1): x → TCP ±X, y → TCP ±Y. */

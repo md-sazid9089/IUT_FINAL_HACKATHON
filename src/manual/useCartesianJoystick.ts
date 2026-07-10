@@ -3,6 +3,7 @@ import { getRuntime } from '../runtime/runtimeInstance';
 import { useRuntimeStore } from '../state/runtimeStore';
 import { useRobotStore } from '../state/robotStore';
 import { ManualJogEngine, type ManualStatus } from './ManualJogEngine';
+import type { CartesianAxis } from './cartesianMotionController';
 import {
   DEFAULT_APPROACH_AXIS,
   DEFAULT_SPEED_MODE,
@@ -24,6 +25,9 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export interface CartesianJoystickControls {
   readonly status: ManualStatus;
   readonly setBaseSpeed: (mode: SpeedMode) => void;
+  /** Single-axis virtual joystick (X, Y or Z pad): value ∈ [-1, 1]. */
+  readonly setAxis: (axis: CartesianAxis, value: number) => void;
+  readonly clearAxis: (axis: CartesianAxis) => void;
   /** Position stick: x → TCP ±X, y → TCP ±Y. */
   readonly setPositionStick: (x: number, y: number) => void;
   readonly clearPositionStick: () => void;
@@ -184,6 +188,8 @@ export function useCartesianJoystick(): CartesianJoystickControls {
   return {
     status,
     setBaseSpeed,
+    setAxis: useCallback((axis: CartesianAxis, value: number) => engine.setAxis(axis, value), [engine]),
+    clearAxis: useCallback((axis: CartesianAxis) => engine.clearAxis(axis), [engine]),
     setPositionStick: useCallback((x: number, y: number) => engine.setJoystick(x, y), [engine]),
     clearPositionStick: useCallback(() => engine.clearJoystick(), [engine]),
     setOrientationStick: useCallback((x: number, y: number) => engine.setOrientationStick(x, y), [engine]),

@@ -31,6 +31,17 @@ export interface IkOptions {
   readonly preferredTiltRad: number;
   /** Hard maximum stylus tilt for a solution to be accepted (radians). */
   readonly maxTiltRad: number;
+  /**
+   * Optional preferred posture (radians by joint name). When set, the
+   * null-space objective pulls toward these values instead of joint midranges
+   * (joints not listed fall back to midrange). Used by manual teleoperation to
+   * prefer a natural bent-elbow pose; PIN/preflight leave it unset.
+   */
+  readonly postureReference?: Readonly<Record<string, number>>;
+  /** Number of alternate seeds to try after the primary (default 12). Manual
+   * jogging uses a small value: the warm-start seed almost always converges,
+   * and failing FAST at a workspace boundary keeps teleoperation responsive. */
+  readonly seedCandidates?: number;
 }
 
 const DEG = Math.PI / 180;

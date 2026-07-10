@@ -18,7 +18,8 @@ const INITIAL = { joint_1: 0, joint_2: 0, joint_3: 0, joint_4: 0, joint_5: 0, jo
 
 interface HarnessOpts {
   maxJointJump?: number;
-  ikSolve?: (p: Vec3, a: Vec3) => Promise<IkResult>;
+  planningTimeoutMs?: number;
+  ikSolve?: (p: Vec3, a: Vec3, seed?: Readonly<Record<string, number>>) => Promise<IkResult>;
 }
 
 function harness(opts: HarnessOpts = {}) {
@@ -35,6 +36,8 @@ function harness(opts: HarnessOpts = {}) {
     snapshotHz: 1000,
     minDurationMs: 100,
     maxJointJump: opts.maxJointJump ?? Math.PI,
+    computeTcp: () => [0, 0, 0] as Vec3,
+    ...(opts.planningTimeoutMs !== undefined ? { planningTimeoutMs: opts.planningTimeoutMs } : {}),
     ...(opts.ikSolve ? { ikSolve: opts.ikSolve } : {}),
   });
   rc.bringOnline();
@@ -160,6 +163,95 @@ describe('RuntimeController — E-stop', () => {
   it('rejects reset when not E-stopped', () => {
     const h = harness();
     expect(h.rc.resetEStop().accepted).toBe(false);
+  });
+
+  it('chains queued jogs on completion without bouncing through READY', async () => {
+    const ikSolve = async (p: Vec3) => verifiedIk({ joint_1: p[0] });
+    const h = harness({ ikSolve });
+    const states: string[] = [];
+
+    // First jog: plan + start executing.
+    h.rc.submit({ type: 'cartesian_jog', source: 'joystick', delta: [0.1, 0, 0], approachAxis: [0, 0, -1] });
+    h.tick(16);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(h.rc.getState()).toBe('EXECUTING');
+
+    // Second jog arrives while executing → chained (queued, not preempted).
+    h.rc.submit({ type: 'cartesian_jog', source: 'joystick', delta: [0.1, 0, 0], approachAxis: [0, 0, -1] });
+    expect(h.rc.getState()).toBe('EXECUTING'); // no preemption bounce
+
+    // Drive to completion of the first segment; the runtime must go straight
+    // to PLANNING/EXECUTING for the queued jog — never READY.
+    for (let i = 0; i < 60; i++) {
+      h.tick(16);
+      states.push(h.rc.getState());
+      await Promise.resolve();
+      await Promise.resolve();
+      if (i > 3 && h.rc.getState() === 'READY' && states[states.length - 2] === 'READY') break;
+    }
+    const firstReady = states.indexOf('READY');
+    const planningIdx = states.indexOf('PLANNING');
+    expect(planningIdx).toBeGreaterThan(-1); // chained second jog planned
+    // READY must not appear BEFORE the chained jog started planning.
+    expect(firstReady === -1 || firstReady > planningIdx).toBe(true);
+  });
+
+  it('dedupes queued manual jogs to depth 1 while chaining', async () => {
+    const ikSolve = async (p: Vec3) => verifiedIk({ joint_1: p[0] });
+    const h = harness({ ikSolve });
+    h.rc.submit({ type: 'cartesian_jog', source: 'joystick', delta: [0.1, 0, 0], approachAxis: [0, 0, -1] });
+    h.tick(16);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(h.rc.getState()).toBe('EXECUTING');
+    // Three more jogs stream in — only the LAST should remain queued.
+    h.rc.submit({ type: 'cartesian_jog', source: 'joystick', delta: [0.1, 0, 0], approachAxis: [0, 0, -1] });
+    h.rc.submit({ type: 'cartesian_jog', source: 'joystick', delta: [0.1, 0, 0], approachAxis: [0, 0, -1] });
+    h.rc.submit({ type: 'cartesian_jog', source: 'joystick', delta: [0.1, 0, 0], approachAxis: [0, 0, -1] });
+    h.tick(16); // publish a fresh snapshot (trajectory not yet complete)
+    expect(h.snapshot()?.queueLength).toBe(1);
+  });
+
+  it('watchdog: a hung IK worker cannot wedge the runtime in PLANNING', async () => {
+    const ikSolve = () => new Promise<IkResult>(() => {}); // never resolves
+    const h = harness({ ikSolve, planningTimeoutMs: 20 });
+    h.rc.submit({ type: 'cartesian_move', source: 'dashboard', position: [0.4, 0, 0.4], approachAxis: [0, 0, -1] });
+    h.tick(16); // dequeue → PLANNING
+    expect(h.rc.getState()).toBe('PLANNING');
+
+    await new Promise((r) => setTimeout(r, 60)); // let the real-time watchdog fire
+    h.tick(16);
+    expect(h.rc.getState()).toBe('READY'); // recovered — not stuck
+    expect(h.snapshot()?.lastRejection).toMatch(/timed out/i);
+
+    // And the runtime accepts new motion immediately afterwards.
+    expect(h.rc.submit(move({ joint_1: 0.2 })).accepted).toBe(true);
+  });
+
+  it('warm-starts IK with the CURRENT joints so jogs stay on the same branch', async () => {
+    const seeds: Array<Readonly<Record<string, number>> | undefined> = [];
+    const ikSolve = async (_p: Vec3, _a: Vec3, seed?: Readonly<Record<string, number>>) => {
+      seeds.push(seed);
+      return verifiedIk({ joint_1: 0.35 });
+    };
+    const h = harness({ ikSolve });
+    // Move joint_1 first so the current pose is non-zero.
+    h.rc.submit(move({ joint_1: 0.3 }));
+    h.runToIdle();
+    expect(h.rc.getJointValues().joint_1).toBeCloseTo(0.3, 9);
+
+    h.rc.submit({ type: 'cartesian_move', source: 'dashboard', position: [0.5, 0, 0.5], approachAxis: [0, 0, -1] });
+    h.tick(16); // dequeue → PLANNING
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(seeds).toHaveLength(1);
+    expect(seeds[0]).toBeDefined();
+    expect(seeds[0]!.joint_1).toBeCloseTo(0.3, 9); // seeded from current joints
+    expect(Object.keys(seeds[0]!)).toEqual(
+      expect.arrayContaining(['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6']),
+    );
   });
 
   it('discards a plan when E-stopped during planning (cancellation)', async () => {

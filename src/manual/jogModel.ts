@@ -17,9 +17,9 @@ export type SpeedMode = 'precision' | 'normal' | 'fast';
 
 /** Cartesian step (metres) applied per emitted jog for each speed mode. */
 export const SPEED_INCREMENTS: Record<SpeedMode, number> = {
-  precision: 0.001,
-  normal: 0.005,
-  fast: 0.01,
+  precision: 0.002,
+  normal: 0.012,
+  fast: 0.03,
 };
 
 export const SPEED_ORDER: readonly SpeedMode[] = ['precision', 'normal', 'fast'];
@@ -30,7 +30,7 @@ export const DEFAULT_SPEED_MODE: SpeedMode = 'normal';
 export const DEFAULT_DEAD_ZONE = 0.15;
 
 /** Fixed jog-emission rate (Hz). Independent of OS/browser key repeat. */
-export const JOG_RATE_HZ = 20;
+export const JOG_RATE_HZ = 30;
 
 /** Default TCP approach axis (stylus points down) when none is provided. */
 export const DEFAULT_APPROACH_AXIS: Vec3 = [0, 0, -1];
@@ -114,11 +114,10 @@ export type ManualGateStatus = 'allowed' | 'busy' | 'blocked';
 
 export interface ManualGate {
   /**
-   * - `allowed`: a new jog may be emitted now — either the runtime is idle
-   *   (READY) or a manual jog is already EXECUTING and the new step preempts it
-   *   with a target a little further ahead, giving smooth continuous motion.
-   * - `busy`: our OWN manual jog is still PLANNING (IK solving) — hold this tick
-   *   so we don't cancel the in-flight solve. Not a rejection; keep the input.
+   * - `allowed`: emit a jog now — READY, or EXECUTING a manual jog (the next
+   *   segment is dedupe-queued and chained by the runtime on completion).
+   * - `busy`: our OWN manual jog is PLANNING (IK solving) — hold this tick so
+   *   the in-flight solve is never cancelled. Not a rejection.
    * - `blocked`: something else forbids manual motion (autonomous ownership,
    *   E-stop, fault, paused, booting…) — surface the reason and disable.
    */
@@ -131,9 +130,11 @@ export interface ManualGate {
  * is UX gating layered on top of the runtime's own hard rejections (E-stop,
  * autonomous ownership, safety) — it never replaces them.
  *
- * A manual jog briefly enters PLANNING (IK) then EXECUTING. We allow emission
- * during EXECUTING so successive steps chain into continuous motion, but wait
- * during PLANNING so we never cancel an in-flight IK solve.
+ * A manual jog briefly enters PLANNING (IK) then EXECUTING. During EXECUTING
+ * we keep emitting: the runtime dedupe-queues the next segment and starts it
+ * the instant the current one completes (chaining), so the state stream never
+ * bounces through READY mid-hold. During PLANNING we wait so the in-flight IK
+ * solve is never cancelled.
  */
 export function manualJogGate(state: RuntimeState, activeSource: CommandSource | null): ManualGate {
   const manualOrIdle = (s: CommandSource | null) => s === null || isManualSource(s);
@@ -144,7 +145,10 @@ export function manualJogGate(state: RuntimeState, activeSource: CommandSource |
       if (manualOrIdle(activeSource)) return { status: 'allowed' };
       return { status: 'blocked', reason: `Manual blocked: ${activeSource} owns motion — cancel it first` };
     case 'PLANNING':
-      if (manualOrIdle(activeSource)) return { status: 'busy' };
+      // Emitting while OUR jog plans is safe: the runtime dedupe-QUEUES the
+      // next segment (never cancels the in-flight solve), so the queue is
+      // always primed and segments chain without a READY gap.
+      if (manualOrIdle(activeSource)) return { status: 'allowed' };
       return { status: 'blocked', reason: `Manual blocked: ${activeSource} owns motion — cancel it first` };
     case 'STOPPING':
       return { status: 'busy' };

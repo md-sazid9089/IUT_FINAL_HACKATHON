@@ -30,7 +30,7 @@ import { EventLog, type RuntimeEvent } from './events';
 export type Vec3 = [number, number, number];
 
 export interface IkSolveFn {
-  (position: Vec3, approachAxis: Vec3): Promise<IkResult>;
+  (position: Vec3, approachAxis: Vec3, seed?: Readonly<Record<string, number>>): Promise<IkResult>;
 }
 
 export interface RuntimeSnapshot {
@@ -59,6 +59,10 @@ export interface RuntimeOptions {
   readonly velocityTolerance?: number;
   readonly snapshotHz?: number;
   readonly minDurationMs?: number;
+  /** Watchdog for Cartesian planning: if the IK worker does not answer within
+   * this window the plan is abandoned and the runtime returns to READY, so a
+   * hung/crashed worker can never wedge the robot in PLANNING. */
+  readonly planningTimeoutMs?: number;
 }
 
 export interface SubmitResult {
@@ -99,6 +103,7 @@ export class RuntimeController {
   private readonly velocityTolerance: number;
   private readonly snapshotIntervalMs: number;
   private readonly minDurationMs: number;
+  private readonly planningTimeoutMs: number;
   private readonly now: () => number;
   private readonly applyJoints: (values: Record<string, number>) => void;
   private readonly ikSolve?: IkSolveFn;
@@ -118,6 +123,7 @@ export class RuntimeController {
     this.velocityTolerance = opts.velocityTolerance ?? 1.001;
     this.snapshotIntervalMs = 1000 / (opts.snapshotHz ?? 15);
     this.minDurationMs = opts.minDurationMs ?? 200;
+    this.planningTimeoutMs = opts.planningTimeoutMs ?? 2500;
     this.limits = opts.profile.activeJoints.map((name) => ({
       name,
       velocity: this.meta.find((m) => m.name === name)?.velocity ?? 0,
@@ -284,9 +290,26 @@ export class RuntimeController {
     // manual jog also replaces any active manual movement for responsiveness.
     if (this.activeCommand && isMovementCommand(this.activeCommand)) {
       const higher = priorityOf(cmd.source) > priorityOf(this.activeCommand.source);
-      // A continuous manual jog replaces any active manual movement; a same-
-      // source manual joint drag replaces its own in-flight move so sliders and
-      // the joystick stay responsive instead of queueing.
+      // Continuous jog CHAINING: a jog arriving while a manual jog executes is
+      // queued (deduped to depth 1) and starts the instant the running segment
+      // completes — the runtime never bounces through READY between segments,
+      // so continuous motion reads as one steady EXECUTING stream.
+      const jogChain =
+        cmd.type === 'cartesian_jog' &&
+        this.activeCommand.type === 'cartesian_jog' &&
+        isManualSource(cmd.source) &&
+        isManualSource(this.activeCommand.source);
+      if (jogChain) {
+        for (let i = this.queue.length - 1; i >= 0; i--) {
+          if (this.queue[i]!.type === 'cartesian_jog' && isManualSource(this.queue[i]!.source)) {
+            this.queue.splice(i, 1);
+          }
+        }
+        this.enqueue(cmd);
+        return { accepted: true, commandId: cmd.id };
+      }
+      // A jog over a NON-jog manual movement replaces it; a same-source manual
+      // joint drag replaces its own in-flight move so sliders stay responsive.
       const jogReplace = cmd.type === 'cartesian_jog' && isManualSource(this.activeCommand.source);
       const sliderReplace =
         cmd.type === 'move_joints' &&
@@ -358,8 +381,20 @@ export class RuntimeController {
         this.activeTrajectory = null;
         const done = this.activeCommand;
         this.activeCommand = null;
-        this.forceState('READY', 'trajectory_completed', `Completed ${done?.type ?? 'move'}`, done?.source);
-        this.publishNow();
+        // Segment chaining: when the next movement is already queued (a held
+        // jog), start it immediately instead of bouncing through READY — the
+        // state stream stays EXECUTING/PLANNING with no green flicker.
+        const next = this.queue.length > 0 && isMovementCommand(this.queue[0]!) ? this.queue.shift()! : null;
+        if (next) {
+          this.log.add('info', 'trajectory_completed', `Completed ${done?.type ?? 'move'}; chaining next`, {
+            source: done?.source,
+            t: this.now(),
+          });
+          this.startMovement(next);
+        } else {
+          this.forceState('READY', 'trajectory_completed', `Completed ${done?.type ?? 'move'}`, done?.source);
+          this.publishNow();
+        }
       }
     }
 
@@ -427,11 +462,32 @@ export class RuntimeController {
     this.activeCommand = cmd;
     this.planningToken += 1;
     const token = this.planningToken;
-    this.forceState('PLANNING', 'planning_started', `Planning cartesian move from ${cmd.source}`, cmd.source);
+    this.forceState(
+      'PLANNING',
+      'planning_started',
+      `Planning cartesian move from ${cmd.source} → [${position.map((v) => v.toFixed(3)).join(', ')}]`,
+      cmd.source,
+    );
     this.publishNow();
 
-    this.ikSolve(position, cmd.approachAxis)
+    // Warm-start the solver from the CURRENT joints: successive jog steps stay
+    // on the same IK branch, giving continuous, natural motion (no posture
+    // jumps or apparent "resets" between steps).
+    const seed: Record<string, number> = {};
+    for (const name of this.profile.activeJoints) seed[name] = this.current[name] ?? 0;
+
+    // Watchdog: a hung IK worker must never wedge the runtime in PLANNING.
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
+    const timeout = new Promise<never>((_, rejectRace) => {
+      watchdog = setTimeout(
+        () => rejectRace(new Error(`IK planning timed out after ${this.planningTimeoutMs} ms`)),
+        this.planningTimeoutMs,
+      );
+    });
+
+    Promise.race([this.ikSolve(position, cmd.approachAxis, seed), timeout])
       .then((result) => {
+        if (watchdog !== null) clearTimeout(watchdog);
         // Discard if E-stopped, preempted, or superseded while planning.
         if (this.eStopped || token !== this.planningToken) return;
         if (!result.verified) {
@@ -455,6 +511,7 @@ export class RuntimeController {
         this.publishNow();
       })
       .catch((err: unknown) => {
+        if (watchdog !== null) clearTimeout(watchdog);
         if (this.eStopped || token !== this.planningToken) return;
         this.reject(`Planning error: ${err instanceof Error ? err.message : String(err)}`, cmd.source);
         this.activeCommand = null;

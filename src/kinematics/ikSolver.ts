@@ -204,7 +204,15 @@ export function solveIK(chain: KinematicChain, request: IkRequest): IkResult {
     .map((j) => ({ name: j.name, yness: Math.abs(j.axis[1]) }))
     .filter((j) => j.yness > 0.5)
     .map((j) => j.name);
-  const seeds = buildSeeds(bounds, request.seed, 12, gridJoints);
+  const seeds = buildSeeds(bounds, request.seed, options.seedCandidates ?? 12, gridJoints);
+
+  // Null-space posture attractor: preferred reference (bent elbow etc.) when
+  // provided, otherwise the joint midrange. Precomputed once per solve.
+  const postureTarget = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const ref = options.postureReference?.[activeJoints[i]!];
+    postureTarget[i] = ref ?? (bounds[i]!.lower + bounds[i]!.upper) / 2;
+  }
 
   let best: { sample: TaskSample; q: Float64Array; iterations: number; seedIndex: number } | null =
     null;
@@ -253,11 +261,11 @@ export function solveIK(chain: KinematicChain, request: IkRequest): IkResult {
         choleskySolve(ws.L, TASK_ROWS, ws.e, ws.y, ws.cholScratch);
         transposeMatVec(ws.J, TASK_ROWS, n, ws.y, ws.dq);
 
-        // Nullspace midrange posture: Δq += g · (z − Jᵀ A⁻¹ J z).
+        // Nullspace posture objective: Δq += g · (z − Jᵀ A⁻¹ J z), where z pulls
+        // toward the posture target (preferred reference or joint midrange).
         if (options.posture === 'midrange') {
           for (let i = 0; i < n; i++) {
-            const mid = (bounds[i]!.lower + bounds[i]!.upper) / 2;
-            ws.z[i] = mid - ws.q[i]!;
+            ws.z[i] = postureTarget[i]! - ws.q[i]!;
           }
           matVec(ws.J, TASK_ROWS, n, ws.z, ws.Jz);
           choleskySolve(ws.L, TASK_ROWS, ws.Jz, ws.yz, ws.cholScratch);

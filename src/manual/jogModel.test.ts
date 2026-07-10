@@ -17,16 +17,16 @@ const N = SPEED_INCREMENTS.normal;
 
 describe('jogModel — speed modes', () => {
   it('defines precision/normal/fast increments', () => {
-    expect(SPEED_INCREMENTS.precision).toBe(0.001);
-    expect(SPEED_INCREMENTS.normal).toBe(0.005);
-    expect(SPEED_INCREMENTS.fast).toBe(0.01);
+    expect(SPEED_INCREMENTS.precision).toBe(0.002);
+    expect(SPEED_INCREMENTS.normal).toBe(0.012);
+    expect(SPEED_INCREMENTS.fast).toBe(0.03);
   });
 
   it('scales the same direction by the selected mode', () => {
     const dir: [number, number, number] = [1, 0, 0];
-    expect(buildJogDelta(dir, SPEED_INCREMENTS.precision)).toEqual([0.001, 0, 0]);
-    expect(buildJogDelta(dir, SPEED_INCREMENTS.normal)).toEqual([0.005, 0, 0]);
-    expect(buildJogDelta(dir, SPEED_INCREMENTS.fast)).toEqual([0.01, 0, 0]);
+    expect(buildJogDelta(dir, SPEED_INCREMENTS.precision)).toEqual([0.002, 0, 0]);
+    expect(buildJogDelta(dir, SPEED_INCREMENTS.normal)).toEqual([0.012, 0, 0]);
+    expect(buildJogDelta(dir, SPEED_INCREMENTS.fast)).toEqual([0.03, 0, 0]);
   });
 });
 
@@ -100,14 +100,12 @@ describe('jogModel — joystick/keyboard equivalence', () => {
 
 describe('jogModel — manualJogGate', () => {
   it('allows a jog when READY', () => expect(manualJogGate('READY', null).status).toBe('allowed'));
-  it('allows preemptive jogs while a manual jog is EXECUTING (continuous motion)', () => {
+  it('allows emission while a manual jog is EXECUTING or PLANNING (segment chaining)', () => {
     expect(manualJogGate('EXECUTING', 'keyboard').status).toBe('allowed');
     expect(manualJogGate('EXECUTING', 'joystick').status).toBe('allowed');
     expect(manualJogGate('EXECUTING', null).status).toBe('allowed');
-  });
-  it('is busy (waits) while our own manual jog is PLANNING', () => {
-    expect(manualJogGate('PLANNING', 'joystick').status).toBe('busy');
-    expect(manualJogGate('PLANNING', null).status).toBe('busy');
+    expect(manualJogGate('PLANNING', 'joystick').status).toBe('allowed');
+    expect(manualJogGate('PLANNING', null).status).toBe('allowed');
   });
   it('blocks EXECUTING/PLANNING when autonomous owns motion', () => {
     const g = manualJogGate('EXECUTING', 'autonomous');

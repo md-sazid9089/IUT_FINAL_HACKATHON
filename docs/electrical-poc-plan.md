@@ -1,5 +1,7 @@
 # Electrical Proof-of-Concept Plan
 
+Gate 9 implementation files live under `hardware/` and the complete summary is in `docs/electrical-poc.md`.
+
 ## Logical architecture
 
 ```text

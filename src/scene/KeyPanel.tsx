@@ -1,5 +1,8 @@
-import { Line, Text } from '@react-three/drei';
+import { Line } from '@react-three/drei';
+import { useMemo } from 'react';
+import * as THREE from 'three';
 import type { KeyConfig } from '../config/keyConfig';
+import { usePinStore } from '../pin/pinStore';
 import { approachUnitVector, coordToTuple, keyButtonCenter, type Vec3Tuple } from './coordinates';
 
 const BUTTON_SIZE = 0.04; // 40 mm square keycap
@@ -10,6 +13,28 @@ interface KeyPanelProps {
   config: KeyConfig;
 }
 
+function KeyLabel({ id, position }: { id: string; position: Vec3Tuple }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, 128, 128);
+    ctx.fillStyle = '#e5e9f0';
+    ctx.font = 'bold 72px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(id, 64, 64);
+    return new THREE.CanvasTexture(canvas);
+  }, [id]);
+
+  return (
+    <sprite position={position} scale={[0.035, 0.035, 1]}>
+      <spriteMaterial map={texture} transparent depthWrite={false} />
+    </sprite>
+  );
+}
+
 /**
  * Renders the six keys from the key configuration. The configured coordinate is
  * the top contact point of each keycap; the button body is drawn below it. A per
@@ -17,12 +42,14 @@ interface KeyPanelProps {
  */
 export function KeyPanel({ config }: KeyPanelProps) {
   const a = approachUnitVector(config.approach_axis);
+  const activeKey = usePinStore((s) => s.activeKey);
 
   return (
     <group name="key-panel">
       {Object.entries(config.keys).map(([id, coord]) => {
         const contact = coordToTuple(coord);
         const center = keyButtonCenter(coord, config.approach_axis, BUTTON_HEIGHT);
+        const active = activeKey === id;
         // Indicator starts "above" the key (opposite the approach direction).
         const indicatorStart: Vec3Tuple = [
           contact[0] - a[0] * APPROACH_INDICATOR_LENGTH,
@@ -34,8 +61,20 @@ export function KeyPanel({ config }: KeyPanelProps) {
             {/* Keycap body (top face on the contact point) */}
             <mesh position={center} castShadow receiveShadow>
               <boxGeometry args={[BUTTON_SIZE, BUTTON_SIZE, BUTTON_HEIGHT]} />
-              <meshStandardMaterial color="#3b4252" metalness={0.1} roughness={0.7} />
+              <meshStandardMaterial
+                color={active ? '#1d4ed8' : '#30343d'}
+                emissive={active ? '#0e7490' : '#000000'}
+                emissiveIntensity={active ? 0.45 : 0}
+                metalness={0.12}
+                roughness={0.62}
+              />
             </mesh>
+            {active ? (
+              <mesh position={[contact[0], contact[1], contact[2] + 0.002]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[0.029, 0.0025, 12, 48]} />
+                <meshBasicMaterial color="#67e8f9" />
+              </mesh>
+            ) : null}
             {/* Contact point marker */}
             <mesh position={contact}>
               <sphereGeometry args={[0.004, 16, 16]} />
@@ -44,15 +83,7 @@ export function KeyPanel({ config }: KeyPanelProps) {
             {/* Approach-axis indicator (from above down to the contact point) */}
             <Line points={[indicatorStart, contact]} color="#a3be8c" lineWidth={2} />
             {/* Key label */}
-            <Text
-              position={[contact[0], contact[1], contact[2] + 0.03]}
-              fontSize={0.02}
-              color="#e5e9f0"
-              anchorX="center"
-              anchorY="middle"
-            >
-              {id}
-            </Text>
+            <KeyLabel id={id} position={[contact[0], contact[1], contact[2] + 0.03]} />
           </group>
         );
       })}

@@ -48,12 +48,12 @@ in the browser (main thread + workers).
 Vite copies `public/` to the `dist/` root. The app fetches these at **absolute
 root paths**, so the server must expose them at `/`:
 
-| Asset | Source | Served path |
-|---|---|---|
-| URDF | `public/robot/6_dof_arm.urdf` | `/robot/6_dof_arm.urdf` |
-| Key config | `public/config/key.config.json` | `/config/key.config.json` |
-| Workers / JS / CSS | bundled | `/assets/*` (content-hashed) |
-| App shell | `index.html` | `/` and SPA fallback |
+| Asset              | Source                          | Served path                  |
+| ------------------ | ------------------------------- | ---------------------------- |
+| URDF               | `public/robot/6_dof_arm.urdf`   | `/robot/6_dof_arm.urdf`      |
+| Key config         | `public/config/key.config.json` | `/config/key.config.json`    |
+| Workers / JS / CSS | bundled                         | `/assets/*` (content-hashed) |
+| App shell          | `index.html`                    | `/` and SPA fallback         |
 
 The production Dockerfile asserts the URDF, key config, and `index.html` exist in
 `dist/` before shipping the image (build-time validation).

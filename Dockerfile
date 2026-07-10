@@ -33,8 +33,8 @@ RUN npm run build
 
 # Build-time validation: fail early if critical static assets are missing.
 RUN test -f dist/index.html \
- && test -f dist/robot/6_dof_arm.urdf \
- && test -f dist/config/key.config.json
+    && test -f dist/robot/6_dof_arm.urdf \
+    && test -f dist/config/key.config.json
 
 # ---- Stage 2: serve the bundle with nginx -----------------------------------
 FROM nginx:1.27-alpine AS runtime
@@ -49,6 +49,6 @@ EXPOSE 80
 
 # Liveness probe against the nginx-served /healthz endpoint.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q -O /dev/null http://127.0.0.1/healthz || exit 1
+    CMD wget -q -O /dev/null http://127.0.0.1/healthz || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

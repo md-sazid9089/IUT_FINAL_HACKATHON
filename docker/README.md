@@ -6,14 +6,14 @@ deployment tooling only. The app runs identically inside and outside Docker.
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `../Dockerfile` | Production multi-stage build → nginx static server |
-| `../Dockerfile.dev` | Development image (Vite dev server, hot reload) |
-| `../docker-compose.yml` | `dev` and `prod` service profiles |
-| `../nginx.conf` | SPA routing, gzip, caching, security headers, `/healthz` |
-| `../.dockerignore` | Keeps images small and reproducible |
-| `../.env.example` | Optional, secret-free build/runtime flags |
+| File                    | Purpose                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| `../Dockerfile`         | Production multi-stage build → nginx static server       |
+| `../Dockerfile.dev`     | Development image (Vite dev server, hot reload)          |
+| `../docker-compose.yml` | `dev` and `prod` service profiles                        |
+| `../nginx.conf`         | SPA routing, gzip, caching, security headers, `/healthz` |
+| `../.dockerignore`      | Keeps images small and reproducible                      |
+| `../.env.example`       | Optional, secret-free build/runtime flags                |
 
 ## Development
 

@@ -69,12 +69,12 @@ docker build -t robotics-twin . # build production image
 `VITE_*` variables are **build-time** (Vite inlines them). Defaults keep a
 self-contained simulation and require no secrets:
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `VITE_APP_MODE` | `simulation` | Operating mode |
-| `VITE_HARDWARE_ENABLED` | `false` | Optional ESP32 transport; never required |
-| `VITE_AGENT_ENABLED` | `false` | Optional agent; build succeeds without keys |
-| `VITE_API_URL` | *(empty)* | Optional backend base URL |
+| Variable                | Default      | Meaning                                     |
+| ----------------------- | ------------ | ------------------------------------------- |
+| `VITE_APP_MODE`         | `simulation` | Operating mode                              |
+| `VITE_HARDWARE_ENABLED` | `false`      | Optional ESP32 transport; never required    |
+| `VITE_AGENT_ENABLED`    | `false`      | Optional agent; build succeeds without keys |
+| `VITE_API_URL`          | _(empty)_    | Optional backend base URL                   |
 
 Copy `.env.example` → `.env` to override. The production service wires these as
 Docker build args; the dev service passes them to Vite.

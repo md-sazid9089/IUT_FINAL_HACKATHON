@@ -55,6 +55,36 @@ prompts/
 - electrical PoC
 - tests, documentation, deployment, and demo evidence
 
+## Hardware PoC
+
+Hardware is disabled by default. The production concept is:
+
+```text
+browser -> Wi-Fi/WebSocket -> ESP32 -> I2C -> PCA9685 -> six servos
+```
+
+Only `joint_1` through `joint_6` are mapped to servo channels. `stylus_pitch` is locked at `0 rad` and is not actuated.
+
+See `docs/electrical-poc.md` and `hardware/`.
+
+## Local Release Validation
+
+```text
+npm ci
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+npm run test:e2e
+```
+
+Preview a production build:
+
+```text
+npm run build
+npm run preview
+```
+
 ## Development rule
 
 Do not skip implementation gates. Do not hardcode key joint solutions. Do not let any UI component or input adapter manipulate URDF joints directly.

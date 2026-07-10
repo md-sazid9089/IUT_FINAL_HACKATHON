@@ -32,4 +32,10 @@ export default tseslint.config(
       globals: { ...globals.node },
     },
   },
+  {
+    files: ['e2e/**/*.mjs'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 );

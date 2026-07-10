@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "author": "IUT Final Hackathon",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo1", "top": -120, "left": 260, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo2", "top": -70, "left": 260, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo3", "top": -20, "left": 260, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo4", "top": 30, "left": 260, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo5", "top": 80, "left": 260, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo6", "top": 130, "left": 260, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "estop", "top": 190, "left": 40, "attrs": { "color": "red", "label": "E-stop" } },
+    { "type": "wokwi-led", "id": "led", "top": 190, "left": 160, "attrs": { "color": "green", "label": "Status" } }
+  ],
+  "connections": [
+    ["esp:18", "servo1:PWM", "green", []],
+    ["esp:19", "servo2:PWM", "green", []],
+    ["esp:21", "servo3:PWM", "green", []],
+    ["esp:22", "servo4:PWM", "green", []],
+    ["esp:23", "servo5:PWM", "green", []],
+    ["esp:5", "servo6:PWM", "green", []],
+    ["esp:GND.1", "servo1:GND", "black", []],
+    ["esp:GND.1", "servo2:GND", "black", []],
+    ["esp:GND.1", "servo3:GND", "black", []],
+    ["esp:GND.1", "servo4:GND", "black", []],
+    ["esp:GND.1", "servo5:GND", "black", []],
+    ["esp:GND.1", "servo6:GND", "black", []],
+    ["esp:VIN", "servo1:V+", "red", []],
+    ["esp:VIN", "servo2:V+", "red", []],
+    ["esp:VIN", "servo3:V+", "red", []],
+    ["esp:VIN", "servo4:V+", "red", []],
+    ["esp:VIN", "servo5:V+", "red", []],
+    ["esp:VIN", "servo6:V+", "red", []],
+    ["esp:27", "estop:1.r", "red", []],
+    ["esp:GND.2", "estop:2.r", "black", []],
+    ["esp:2", "led:A", "green", []],
+    ["esp:GND.2", "led:C", "black", []]
+  ]
+}

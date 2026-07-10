@@ -9,6 +9,7 @@ import { JointDebugPanel } from './ui/JointDebugPanel';
 import { IkPreflightPanel } from './ui/IkPreflightPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
 import { PinPanel } from './ui/PinPanel';
+import { HardwarePanel } from './ui/HardwarePanel';
 
 const KEY_CONFIG_URL = '/config/key.config.json';
 
@@ -43,6 +44,7 @@ export function App() {
       <div className="app-body">
         <aside className="sidebar left">
           <RuntimePanel />
+          <HardwarePanel />
           <TelemetryPanel />
           <FkDiagnosticsPanel />
         </aside>

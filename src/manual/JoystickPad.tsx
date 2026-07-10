@@ -1,163 +1,303 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
 import { DEFAULT_DEAD_ZONE } from './jogModel';
 
 export interface JoystickPadProps {
-  /** Called with the normalised vector (x∈[-1,1], y∈[-1,1]) while held. +Y is up. */
+  /**
+   * x:
+   *  -1 = full left
+   *  +1 = full right
+   *
+   * y:
+   *  -1 = full down
+   *  +1 = full up
+   */
   readonly onVector: (x: number, y: number) => void;
-  /** Called when the stick is released or capture is lost — motion must stop. */
+
   readonly onRelease: () => void;
   readonly deadZone?: number;
   readonly disabled?: boolean;
   readonly size?: number;
 }
 
-/**
- * XY Cartesian joystick with pointer capture.
- *
- * Mapping: horizontal right = +X, left = −X; vertical up = +Y, down = −Y.
- * The knob position previews the live direction vector. On pointer release OR
- * pointer-capture loss the stick recentres and `onRelease` fires so the engine
- * stops emitting immediately.
- */
+interface StickPosition {
+  x: number;
+  y: number;
+}
+
 export function JoystickPad({
   onVector,
   onRelease,
   deadZone = DEFAULT_DEAD_ZONE,
   disabled = false,
-  size = 140,
+  size = 160,
 }: JoystickPadProps) {
   const padRef = useRef<HTMLDivElement>(null);
-  const activePointer = useRef<number | null>(null);
-  const [knob, setKnob] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const activePointerId = useRef<number | null>(null);
+  const releaseRef = useRef(onRelease);
 
-  const radius = size / 2;
+  const [position, setPosition] = useState<StickPosition>({
+    x: 0,
+    y: 0,
+  });
 
-  const recenter = useCallback(() => {
-    activePointer.current = null;
-    setKnob({ x: 0, y: 0 });
-    onRelease();
+  const knobDiameter = 24;
+  const knobRadius = knobDiameter / 2;
+  const movementRadius = size / 2 - knobRadius - 6;
+
+  useEffect(() => {
+    releaseRef.current = onRelease;
   }, [onRelease]);
 
-  const applyFromEvent = useCallback(
+  const reset = useCallback(() => {
+    activePointerId.current = null;
+
+    setPosition({
+      x: 0,
+      y: 0,
+    });
+
+    releaseRef.current();
+  }, []);
+
+  const updateFromPointer = useCallback(
     (clientX: number, clientY: number) => {
       const pad = padRef.current;
-      if (!pad) return;
+
+      if (!pad) {
+        return;
+      }
+
       const rect = pad.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      let nx = (clientX - cx) / radius;
-      // Screen Y grows downward; invert so pushing up gives +Y.
-      let ny = -(clientY - cy) / radius;
-      const mag = Math.hypot(nx, ny);
-      if (mag > 1) {
-        nx /= mag;
-        ny /= mag;
+
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      let x = (clientX - centerX) / movementRadius;
+
+      // Browser Y grows downward, so invert it.
+      let y = -(clientY - centerY) / movementRadius;
+
+      const magnitude = Math.hypot(x, y);
+
+      /**
+       * Keep the joystick inside its circular boundary.
+       *
+       * [1, 1] becomes:
+       * [0.7071, 0.7071]
+       *
+       * Therefore, a diagonal movement does not become faster than a straight
+       * horizontal or vertical movement.
+       */
+      if (magnitude > 1) {
+        x /= magnitude;
+        y /= magnitude;
       }
-      setKnob({ x: nx, y: ny });
-      const emitMag = Math.hypot(nx, ny);
-      if (emitMag <= deadZone) {
+
+      const finalMagnitude = Math.hypot(x, y);
+
+      if (finalMagnitude <= deadZone) {
+        setPosition({
+          x: 0,
+          y: 0,
+        });
+
         onVector(0, 0);
-      } else {
-        onVector(nx, ny);
+        return;
       }
+
+      setPosition({
+        x,
+        y,
+      });
+
+      onVector(x, y);
     },
-    [deadZone, onVector, radius],
+    [deadZone, movementRadius, onVector],
   );
 
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (disabled) return;
-      activePointer.current = e.pointerId;
-      e.currentTarget.setPointerCapture(e.pointerId);
-      applyFromEvent(e.clientX, e.clientY);
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (disabled) {
+        return;
+      }
+
+      activePointerId.current = event.pointerId;
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+
+      updateFromPointer(
+        event.clientX,
+        event.clientY,
+      );
     },
-    [applyFromEvent, disabled],
+    [disabled, updateFromPointer],
   );
 
   const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (activePointer.current !== e.pointerId) return;
-      applyFromEvent(e.clientX, e.clientY);
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (activePointerId.current !== event.pointerId) {
+        return;
+      }
+
+      updateFromPointer(
+        event.clientX,
+        event.clientY,
+      );
     },
-    [applyFromEvent],
+    [updateFromPointer],
   );
 
-  const handlePointerUp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (activePointer.current !== e.pointerId) return;
-      recenter();
+  const handlePointerEnd = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (activePointerId.current !== event.pointerId) {
+        return;
+      }
+
+      reset();
     },
-    [recenter],
+    [reset],
   );
 
-  // Pointer-capture loss (e.g. touch cancelled, focus stolen) must stop motion.
-  const handleLostCapture = useCallback(() => {
-    if (activePointer.current !== null) recenter();
-  }, [recenter]);
+  const handleLostPointerCapture = useCallback(() => {
+    if (activePointerId.current !== null) {
+      reset();
+    }
+  }, [reset]);
 
-  // Keyboard accessibility: arrow keys nudge the stick while focused.
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (disabled) return;
-      const map: Record<string, [number, number]> = {
-        ArrowRight: [1, 0],
-        ArrowLeft: [-1, 0],
-        ArrowUp: [0, 1],
-        ArrowDown: [0, -1],
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (disabled) {
+        return;
+      }
+
+      const mapping: Record<string, StickPosition> = {
+        ArrowRight: { x: 1, y: 0 },
+        ArrowLeft: { x: -1, y: 0 },
+        ArrowUp: { x: 0, y: 1 },
+        ArrowDown: { x: 0, y: -1 },
       };
-      const v = map[e.key];
-      if (!v) return;
-      e.preventDefault();
-      setKnob({ x: v[0], y: v[1] });
-      onVector(v[0], v[1]);
+
+      const next = mapping[event.key];
+
+      if (!next) {
+        return;
+      }
+
+      event.preventDefault();
+
+      setPosition(next);
+      onVector(next.x, next.y);
     },
     [disabled, onVector],
   );
 
   const handleKeyUp = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-        e.preventDefault();
-        recenter();
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (
+        event.key === 'ArrowRight' ||
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowDown'
+      ) {
+        event.preventDefault();
+        reset();
       }
     },
-    [recenter],
+    [reset],
   );
 
-  // Safety: recentre if this component ever unmounts mid-drag. Uses a ref so
-  // the cleanup runs ONLY on unmount — not on every re-render (which would
-  // otherwise clear the stick continuously as parent status updates arrive).
-  const recenterRef = useRef(recenter);
   useEffect(() => {
-    recenterRef.current = recenter;
-  }, [recenter]);
-  useEffect(() => () => recenterRef.current(), []);
+    return () => {
+      releaseRef.current();
+    };
+  }, []);
 
-  const knobPx = {
-    left: `${50 + knob.x * 45}%`,
-    top: `${50 - knob.y * 45}%`,
+  /**
+   * Using transform instead of left/top percentage plus negative margins keeps
+   * the ball exactly centred.
+   */
+  const knobStyle: React.CSSProperties = {
+    width: knobDiameter,
+    height: knobDiameter,
+    transform:
+      `translate(calc(-50% + ${position.x * movementRadius}px), ` +
+      `calc(-50% + ${-position.y * movementRadius}px))`,
   };
 
+  const angle =
+    position.x === 0 && position.y === 0
+      ? null
+      : (Math.atan2(position.y, position.x) * 180) / Math.PI;
+
+  const strength = Math.round(
+    Math.min(1, Math.hypot(position.x, position.y)) * 100,
+  );
+
   return (
-    <div
-      ref={padRef}
-      className={`joystick-pad${disabled ? ' disabled' : ''}`}
-      style={{ width: size, height: size }}
-      role="application"
-      aria-label="XY Cartesian joystick. Drag to jog the tool: right +X, left −X, up +Y, down −Y."
-      aria-disabled={disabled}
-      tabIndex={disabled ? -1 : 0}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      onLostPointerCapture={handleLostCapture}
-      onKeyDown={handleKeyDown}
-      onKeyUp={handleKeyUp}
-    >
-      <div className="joystick-cross joystick-cross-h" />
-      <div className="joystick-cross joystick-cross-v" />
-      <div className="joystick-knob" style={knobPx} />
+    <div className="joint-joystick-wrapper">
+      <div
+        ref={padRef}
+        className={`joystick-pad${disabled ? ' disabled' : ''}`}
+        style={{
+          width: size,
+          height: size,
+        }}
+        role="application"
+        tabIndex={disabled ? -1 : 0}
+        aria-disabled={disabled}
+        aria-label={
+          'Joint joystick. Left and right control joint 1. ' +
+          'Up and down control joint 2.'
+        }
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onLostPointerCapture={handleLostPointerCapture}
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
+      >
+        <span className="joystick-label joystick-label-up">
+          J2+
+        </span>
+
+        <span className="joystick-label joystick-label-down">
+          J2−
+        </span>
+
+        <span className="joystick-label joystick-label-left">
+          J1−
+        </span>
+
+        <span className="joystick-label joystick-label-right">
+          J1+
+        </span>
+
+        <div className="joystick-cross joystick-cross-h" />
+        <div className="joystick-cross joystick-cross-v" />
+
+        <div
+          className="joystick-knob"
+          style={knobStyle}
+        />
+      </div>
+
+      <div className="joystick-values mono small">
+        <span>J1 input: {position.x.toFixed(3)}</span>
+        <span>J2 input: {position.y.toFixed(3)}</span>
+
+        <span>
+          Angle: {angle === null ? '—' : `${angle.toFixed(1)}°`}
+        </span>
+
+        <span>Power: {strength}%</span>
+      </div>
     </div>
   );
 }

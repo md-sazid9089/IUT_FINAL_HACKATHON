@@ -282,10 +282,18 @@ body,
 
 .joystick-pad {
   position: relative;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%, #2f3644, #222833);
-  border: 1px solid var(--panel-border);
+  background:
+    radial-gradient(circle at 50% 50%,
+      #343c4b 0%,
+      #29303c 48%,
+      #1d222c 100%);
+  border: 2px solid var(--panel-border);
   touch-action: none;
+  user-select: none;
   cursor: grab;
   outline: none;
 }
@@ -309,6 +317,7 @@ body,
   right: 8%;
   top: 50%;
   height: 1px;
+  transform: translateY(-50%);
 }
 
 .joystick-cross-v {
@@ -316,17 +325,22 @@ body,
   bottom: 8%;
   left: 50%;
   width: 1px;
+  transform: translateX(-50%);
 }
 
 .joystick-knob {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
+  left: 50%;
+  top: 50%;
+  box-sizing: border-box;
   border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
   background: var(--accent);
-  box-shadow: 0 0 6px rgba(136, 192, 208, 0.6);
+  box-shadow:
+    0 0 0 5px rgba(136, 192, 208, 0.12),
+    0 0 12px rgba(136, 192, 208, 0.75);
   pointer-events: none;
+  will-change: transform;
 }
 
 .manual-zcol {
@@ -437,4 +451,134 @@ body,
 
 .joint-req {
   color: var(--warn);
+}
+
+.joystick-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.joystick-pad {
+  position: relative;
+  border-radius: 50%;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  overflow: hidden;
+}
+
+.joystick-pad:active {
+  cursor: grabbing;
+}
+
+.joystick-axis-label {
+  position: absolute;
+  z-index: 2;
+  font-family: monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.joystick-label-up {
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.joystick-label-down {
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.joystick-label-left {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.joystick-label-right {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.joystick-live-readout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(90px, 1fr));
+  gap: 0.35rem 0.75rem;
+  width: 100%;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.joystick-live-readout span {
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.35rem;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.joint-only-grid {
+  justify-content: center;
+}
+
+.joint-joystick-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.joystick-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(110px, 1fr));
+  width: 100%;
+  gap: 0.35rem;
+}
+
+.joystick-values span {
+  padding: 0.35rem 0.45rem;
+  text-align: center;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background: rgba(18, 22, 29, 0.65);
+}
+
+.joystick-label {
+  position: absolute;
+  z-index: 2;
+  font-family: monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.joystick-label-up {
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.joystick-label-down {
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.joystick-label-left {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.joystick-label-right {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 }

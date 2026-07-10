@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useRobotStore } from '../state/robotStore';
 import { useRuntimeStore } from '../state/runtimeStore';
 import { getRuntime } from '../runtime/runtimeInstance';
@@ -23,11 +22,17 @@ export function JointControlPanel() {
   // booting…). Manual-owned planning/executing keeps the sliders live.
   const disabled = manualJogGate(state, activeSource).status === 'blocked';
 
-  const [requested, setRequested] = useState<Record<string, number>>({});
-
-  function command(name: string, value: number) {
-    setRequested((prev) => ({ ...prev, [name]: value }));
-    getRuntime()?.submit({ type: 'move_joints', source: 'dashboard', joints: { [name]: value } });
+  function command(
+    name: string,
+    value: number,
+  ) {
+    getRuntime()?.submit({
+      type: 'move_joints',
+      source: 'dashboard',
+      joints: {
+        [name]: value,
+      },
+    });
   }
 
   const revolute = jointMeta.filter((m) => m.type === 'revolute');
@@ -43,7 +48,7 @@ export function JointControlPanel() {
       {revolute.map((m) => {
         const locked = m.name in profile.lockedJoints;
         const current = jointValues[m.name] ?? (locked ? (profile.lockedJoints[m.name] ?? 0) : 0);
-        const req = requested[m.name] ?? current;
+        const req = current;
         return (
           <div key={m.name} className="joint-control">
             <div className="joint-control-head">

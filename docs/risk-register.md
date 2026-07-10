@@ -2,10 +2,10 @@
 
 | Risk | Impact | Mitigation | Owner | Status |
 |---|---|---|---|---|
-| 6/7-joint ambiguity | High | Two profiles; six-joint default | Robotics | Open |
+| 6/7-joint ambiguity | High | Judge clarified: six active joints; stylus_pitch locked 0; approach_axis is a bounded-tilt (≤20°) preference. All six keys reachable 6-DOF (worst tilt ≈4.4°) | Robotics | Resolved (ADR-009) |
 | Incorrect URDF frame convention | High | FK/render comparison before IK | Robotics | Open |
 | IK instability | High | Adaptive DLS/LM, step rejection, deterministic seeds, fallback branch | Robotics | Open |
-| Tool orientation overconstrained | High | Position + tool-axis task, free roll | Robotics | Open |
+| Tool orientation overconstrained | High | Position hard task; tool-axis soft, tool roll free; bounded max tilt | Robotics | Resolved (ADR-009) |
 | PIN works only once | High | Pose cache, safe retract, ten-run acceptance | QA | Open |
 | Browser voice unavailable | Medium | Typed deterministic fallback | Controls | Open |
 | UI blocks during preflight | Medium | Worker-based planning | Platform | Open |

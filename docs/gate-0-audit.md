@@ -4,6 +4,14 @@
 
 Gate 0 — Repository and Resource Audit
 
+> **Judge clarification (2026-07-10, added during Gate 3):** The required system
+> uses six active arm joints only; `stylus_pitch` stays locked at 0 rad and is
+> not a seventh control axis. `approach_axis = -z` defines the desired Cartesian
+> TCP approach/retract path, not a hard requirement that the stylus local +Z stay
+> perfectly aligned with world −Z. Gate 3 verified all six keys are reachable in
+> the `competition_6dof` profile with a small bounded stylus tilt (measured worst
+> ≈ 4.4°, hard max 20°). The `model_7dof` profile is a hidden diagnostic only.
+
 ## Objective
 
 Audit the repository and organizer resources without scaffolding or implementing the application: print the tree, verify immutable resources by SHA-256, fully inspect the URDF, validate `key.config.json`, surface ambiguities and blockers, confirm the document-prompt isolation policy, propose stable dependencies (no install), and propose the Gate 1 plan.

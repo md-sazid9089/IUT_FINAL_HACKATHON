@@ -97,6 +97,15 @@ Zero-pose TCP ≈ `(0, 0, 1.497)` in `base_link`. Approximate maximum vertical r
 
 Per repository instruction, `stylus_pitch` **remains a `revolute` joint in both profiles** — in `competition_6dof` it is revolute but locked by configuration; in `model_7dof` it is revolute and active. The lock is a control-layer constraint only; the URDF joint type is never changed.
 
+> **Judge clarification (2026-07-10, ADR-009):** `competition_6dof` is the sole
+> required/judged profile. `stylus_pitch` stays **locked at 0 rad** (verified in
+> Gate 3 — exactly 0 in every solve/waypoint). `model_7dof` is a hidden
+> engineering diagnostic only and must not be used to claim key reachability.
+> `approach_axis` defines the desired Cartesian TCP approach/retract path;
+> exact global stylus-axis alignment is a **preference under a bounded tilt**
+> (preferred 0°, hard max 20°). Gate 3 measured worst tilt ≈ 4.4° across all six
+> keys with position error ≤ 1e-4 m, so all six are reachable in 6-DOF.
+
 ---
 
 ## 6. Noted internal inconsistencies (documentation only — do not "fix" the immutable file)

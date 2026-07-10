@@ -5,6 +5,7 @@ import { SceneRoot } from './scene/SceneRoot';
 import { TelemetryPanel } from './ui/TelemetryPanel';
 import { FkDiagnosticsPanel } from './ui/FkDiagnosticsPanel';
 import { JointDebugPanel } from './ui/JointDebugPanel';
+import { IkPreflightPanel } from './ui/IkPreflightPanel';
 import { StatusOverlay } from './ui/StatusOverlay';
 
 const KEY_CONFIG_URL = '/config/key.config.json';
@@ -50,6 +51,7 @@ export function App() {
 
         <aside className="sidebar right">
           <JointDebugPanel />
+          <IkPreflightPanel keyConfig={keyConfig} />
         </aside>
       </div>
     </div>

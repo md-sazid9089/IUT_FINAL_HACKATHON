@@ -47,3 +47,26 @@
 **Decision:** Required voice commands use a deterministic parser. AI is optional and downstream of schema/safety gates.
 
 **Reason:** Protects the core score and offline fallback.
+
+## ADR-009 — Six active joints; approach axis as a bounded-tilt preference
+
+**Date:** 2026-07-10 (judge clarification)
+
+**Decision:** Judge clarification confirms that the required system uses six
+active arm joints (`joint_1`…`joint_6`). `stylus_pitch` remains locked at 0 rad
+and is not a seventh control axis. The key configuration's `approach_axis`
+defines the desired Cartesian TCP approach/retract path; exact global
+stylus-axis alignment is treated as a **preference subject to a bounded tilt**
+(preferred 0°, hard maximum 20°). The `model_7dof` profile is an optional hidden
+engineering diagnostic only and must never be used to claim mandatory key
+reachability.
+
+**Reason:** Position is the physically meaningful press requirement (≤5 mm).
+Forcing perfect straight-down alignment makes the far key column unreachable in
+6-DOF, whereas a small bounded tilt (measured worst ≈ 4.4°) reaches all six keys
+with `stylus_pitch` locked. This resolves the 6-vs-7 discrepancy in favour of the
+judged six-knob hardware interpretation.
+
+**Consequence:** The required preflight and execution path use `competition_6dof`
+exclusively. The IK key-press task makes position the hard constraint and
+minimises stylus tilt (soft, tool roll free) under a configurable maximum tilt.
